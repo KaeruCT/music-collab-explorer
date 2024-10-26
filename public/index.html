@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style type="text/css">
+    html,
+    body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+
+    #app {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+    }
+  </style>
+  <title>Collab Graph</title>
+  <script src="https://cdn.jsdelivr.net/npm/vis-network@9.1.2/standalone/umd/vis-network.min.js"></script>
+</head>
+
+<body>
+  <div id="app"></div>
+  <script>
+    const nodes = new vis.DataSet();
+    const edges = new vis.DataSet();
+
+    const container = document.getElementById("app");
+    const network = new vis.Network(container, { nodes, edges }, {
+      interaction: { hideEdgesOnDrag: true },
+      nodes: { shape: "dot", size: 16 },
+      physics: {
+        forceAtlas2Based: {
+          gravitationalConstant: -26,
+          centralGravity: 0.005,
+          springLength: 230,
+          springConstant: 0.18,
+        },
+        maxVelocity: 146,
+        solver: "forceAtlas2Based",
+        timestep: 0.35,
+        stabilization: false
+      },
+      layout: { improvedLayout: false }
+    });
+
+    async function addData(gid) {
+      try {
+        const response = await fetch(`/artist/${gid}/collabs`);
+        const data = await response.json();
+
+        nodes.add(data.nodes);
+        edges.add(data.edges);
+
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      }
+    }
+
+    // Example of adding data for a specific artist GID
+    addData("example-gid");
+
+  </script>
+</body>
+
+</html>
