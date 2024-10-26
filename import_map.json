@@ -1,0 +1,6 @@
+{
+  "imports": {
+    "oak": "https://deno.land/x/oak/mod.ts",
+    "postgres": "https://deno.land/x/postgres/mod.ts"
+  }
+}

@@ -3,11 +3,11 @@ import { Pool } from "postgres";
 const POOL_SIZE = 10;
 
 const pool = new Pool({
-  user: "user",
-  password: "password",
-  database: "dbname",
+  user: "musicbrainz",
+  password: "musicbrainz",
+  database: "musicbrainz",
   hostname: "localhost",
-  port: 5432,
+  port: 15432,
 }, POOL_SIZE);
 
 export default pool;

@@ -1,9 +1,6 @@
 {
-  "imports": {
-    "oak": "https://deno.land/x/oak/mod.ts",
-    "postgres": "https://deno.land/x/postgres/mod.ts"
-  },
+  "importMap": "./import_map.json",
   "tasks": {
-    "start": "deno run --allow-net --allow-read --import-map=deno.json app.ts"
+    "start": "deno run --allow-net --allow-read --allow-env app.ts"
   }
 }
