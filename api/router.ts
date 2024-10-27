@@ -1,14 +1,14 @@
-import { Router, RouterContext } from "oak";
-import pool from "../db/client.ts";
+import { Router, RouterContext } from "@oak/oak";
+import pool from "./db/client.ts";
 import { Artist, getArtist, getCollabs, searchArtists } from "./data.ts";
 
-interface Node {
+export interface Node {
   id: string | number;
   label: string;
   color: string;
 }
 
-interface Edge {
+export interface Edge {
   from: string | number;
   to: string | number;
   value: number;
@@ -17,9 +17,9 @@ interface Edge {
 
 export const router = new Router();
 
-type ArtistSearchContext = RouterContext<"/artists", { q?: string }>;
+type ArtistSearchContext = RouterContext<"/api/artists", { q?: string }>;
 
-router.get("/artists", async (ctx: ArtistSearchContext) => {
+router.get("/api/artists", async (ctx: ArtistSearchContext) => {
   const query = ctx.request.url.searchParams.get("q") || "";
 
   if (!query) {
@@ -49,8 +49,8 @@ function generateColor(id: string): string {
 }
 
 type Track = { gid: string; name: string };
-type ArtistCollabsContext = RouterContext<"/artists/:gid/collabs", { gid: string }>;
-router.get("/artists/:gid/collabs", async (ctx: ArtistCollabsContext) => {
+type ArtistCollabsContext = RouterContext<"/api/artists/:gid/collabs", { gid: string }>;
+router.get("/api/artists/:gid/collabs", async (ctx: ArtistCollabsContext) => {
   const { gid } = ctx.params;
   const artistIds = new Set<string>();
 

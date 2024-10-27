@@ -1,10 +1,6 @@
 import { Pool } from "postgres";
-import "dotenv";
 
 const POOL_SIZE = 10;
-
-// Import dotenv to load environment variables
-import "https://deno.land/x/dotenv@v3.2.0/load.ts";
 
 // Access environment variables
 const dbHost = Deno.env.get("DB_HOST") || "localhost";
