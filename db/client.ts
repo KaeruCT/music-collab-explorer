@@ -19,6 +19,8 @@ const pool = new Pool({
   database: dbName,
   hostname: dbHost,
   port: Number(dbPort),
+  tls: { enforce: true },
+  caCertificates: [await Deno.readTextFile("/home/ec2-user/music-graph2/eu-central-1-bundle.pem")],
 }, POOL_SIZE);
 
 export default pool;
