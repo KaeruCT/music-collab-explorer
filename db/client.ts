@@ -12,6 +12,7 @@ const dbUser = Deno.env.get("DB_USER") || "musicbrainz";
 const dbPassword = Deno.env.get("DB_PASSWORD") || "musicbrainz";
 const dbName = Deno.env.get("DB_NAME") || "musicbrainz";
 const dbPort = Deno.env.get("DB_PORT") || "15432";
+const enforceTls = Boolean(Deno.env.get("ENFORCE_TLS")) || false;
 
 const pool = new Pool({
   user: dbUser,
@@ -19,8 +20,7 @@ const pool = new Pool({
   database: dbName,
   hostname: dbHost,
   port: Number(dbPort),
-  tls: { enforce: true },
-  caCertificates: [await Deno.readTextFile("/home/ec2-user/music-graph2/eu-central-1-bundle.pem")],
+  tls: { enforce: enforceTls },
 }, POOL_SIZE);
 
 export default pool;

@@ -4,223 +4,55 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style type="text/css">
-    html,
-    body {
+  <title>Collab Graph</title>
+  <!-- Include React and ReactDOM from CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.development.js" crossorigin></script>
+  <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+  <!-- Include vis-network from CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/vis-network@9.1.2/standalone/umd/vis-network.min.js"></script>
+  <!-- Inline CSS for basic styling -->
+  <style>
+    /* CSS styles here for simplicity */
+    body,
+    html {
       height: 100%;
       margin: 0;
       padding: 0;
       display: flex;
       flex-direction: row;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
+      font-family: Arial, sans-serif;
     }
 
-    #sidebar {
-      width: 280px;
-      padding: 10px;
-      box-sizing: border-box;
+    #root {
       display: flex;
-      flex-direction: column;
-      background: #2c3e50;
-      color: #ecf0f1;
-      flex-shrink: 0;
-      overflow: hidden;
+      height: 100vh;
+      width: 100vw;
     }
 
-    #sidebar .section {
-      overflow: auto;
+    .spinner {
+      border: 8px solid #f3f3f3;
+      border-top: 8px solid #333;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
     }
 
-    #app {
-      flex-grow: 1;
-      position: relative;
-    }
+    @keyframes spin {
+      0% {
+        transform: rotate(0deg);
+      }
 
-    .section {
-      margin-bottom: 20px;
-    }
-
-    /* Divider line between sections */
-    .section:not(:last-child) {
-      border-bottom: 1px solid #34495e;
-      padding-bottom: 15px;
-    }
-
-    #search-form {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 10px;
-      width: 100%;
-      /* Ensure it stays within sidebar width */
-    }
-
-    input[type="text"] {
-      flex-grow: 1;
-      padding: 8px;
-      border: 1px solid #34495e;
-      border-radius: 4px;
-      background-color: #34495e;
-      color: #ecf0f1;
-      width: 100%;
-      /* Full width to fill available space */
-      box-sizing: border-box;
-    }
-
-    button {
-      padding: 8px 16px;
-      border: none;
-      border-radius: 4px;
-      background-color: #1abc9c;
-      color: #fff;
-      cursor: pointer;
-      flex-shrink: 0;
-      /* Prevents the button from shrinking */
-    }
-
-    button:hover {
-      background-color: #16a085;
-    }
-
-    .artist-item {
-      cursor: pointer;
-      padding: 8px;
-      margin-bottom: 5px;
-      background-color: #34495e;
-      color: #ecf0f1;
-      border-radius: 4px;
-      transition: background-color 0.2s ease;
-    }
-
-    .artist-item:hover {
-      background-color: #5b768e;
-    }
-
-    .selected-artist {
-      padding: 8px;
-      background-color: #34495e;
-      margin-bottom: 5px;
-      color: #ecf0f1;
-      border-radius: 4px;
+      100% {
+        transform: rotate(360deg);
+      }
     }
   </style>
-  <title>Collab Graph</title>
-  <script src="https://cdn.jsdelivr.net/npm/vis-network@9.1.2/standalone/umd/vis-network.min.js"></script>
 </head>
 
 <body>
-  <div id="sidebar">
-    <div class="section" id="search-section">
-      <form id="search-form">
-        <input type="text" id="search-input" placeholder="Search for artist">
-        <button type="submit">Search</button>
-      </form>
-      <div id="search-results"></div>
-    </div>
-    <div class="section" id="selected-artists-section">
-      <div id="selected-artists"></div>
-    </div>
-  </div>
-
-  <div id="app"></div>
-
-  <script>
-    const nodes = new vis.DataSet();
-    const edges = new vis.DataSet();
-    const selectedArtistIds = new Set(); // Track selected artist IDs
-
-    const container = document.getElementById("app");
-    const network = new vis.Network(container, { nodes, edges }, {
-      interaction: { hideEdgesOnDrag: true },
-      nodes: { shape: "dot", size: 16 },
-      physics: {
-        forceAtlas2Based: {
-          gravitationalConstant: -26,
-          centralGravity: 0.005,
-          springLength: 230,
-          springConstant: 0.18,
-        },
-        maxVelocity: 146,
-        solver: "forceAtlas2Based",
-        timestep: 0.35,
-        stabilization: false
-      },
-      layout: { improvedLayout: false }
-    });
-
-    async function addArtistCollabs(gid) {
-      try {
-        const response = await fetch(`/artists/${gid}/collabs`);
-        const data = await response.json();
-
-        // Filter out nodes and edges that already exist in the graph
-        const newNodes = data.nodes.filter(node => !nodes.get(node.id));
-        const newEdges = data.edges.filter(edge => {
-          return !edges.get({ filter: item => item.from === edge.from && item.to === edge.to }).length;
-        });
-
-        nodes.add(newNodes);
-        edges.add(newEdges);
-      } catch (error) {
-        console.error("Error fetching data:", error);
-      }
-    }
-
-    async function searchArtist() {
-      const query = document.getElementById("search-input").value;
-      if (!query) return;
-
-      const searchResults = document.getElementById("search-results");
-      searchResults.innerHTML = "Searching...";
-
-      try {
-        const response = await fetch(`/artists?q=${encodeURIComponent(query)}`);
-        const artists = await response.json();
-        searchResults.innerHTML = "";
-
-        artists.forEach(artist => {
-          const artistItem = document.createElement("div");
-          artistItem.className = "artist-item";
-          artistItem.textContent = artist.name;
-
-          // Disable the item if the artist is already selected
-          if (selectedArtistIds.has(artist.gid)) {
-            artistItem.style.opacity = 0.5;
-            artistItem.style.cursor = "not-allowed";
-          } else {
-            artistItem.onclick = () => selectArtist(artist);
-          }
-
-          searchResults.appendChild(artistItem);
-        });
-      } catch (error) {
-        console.error("Error fetching search results:", error);
-        searchResults.innerHTML = "Error fetching search results";
-      }
-    }
-
-    function selectArtist(artist) {
-      if (selectedArtistIds.has(artist.gid)) return; // Skip if already selected
-
-      // Track selected artist
-      selectedArtistIds.add(artist.gid);
-
-      const selectedArtistsContainer = document.getElementById("selected-artists");
-
-      // Add artist to the selected artists list
-      const artistDiv = document.createElement("div");
-      artistDiv.className = "selected-artist";
-      artistDiv.textContent = artist.name;
-      selectedArtistsContainer.appendChild(artistDiv);
-
-      // Add artist's collaboration data to the graph
-      addArtistCollabs(artist.gid);
-    }
-
-    document.querySelector("#search-form").addEventListener("submit", event => {
-      event.preventDefault();
-      searchArtist();
-    });
-  </script>
+  <div id="root"></div>
+  <script src="./index.js"></script>
 </body>
 
 </html>

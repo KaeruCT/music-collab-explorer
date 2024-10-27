@@ -7,6 +7,8 @@ const app = new Application();
 app.use(async (ctx, next) => {
   if (ctx.request.url.pathname === "/") {
     await send(ctx, "public/index.html");
+  } else if (ctx.request.url.pathname === "/index.js") {
+    await send(ctx, "public/index.js");
   } else {
     await next();
   }

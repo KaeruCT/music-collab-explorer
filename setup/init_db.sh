@@ -62,3 +62,10 @@ rm CreatePrimaryKeys.sql
 wget https://raw.githubusercontent.com/metabrainz/musicbrainz-server/master/admin/sql/CreateIndexes.sql
 psql -p $PGPORT -h $PGHOST -d $DB -U $PGUSER -a -f CreateIndexes.sql
 rm CreateIndexes.sql
+
+psql -p $PGPORT -h $PGHOST -d $DB -U $PGUSER -a -c "CREATE INDEX idx_artist_credit_name_artist ON artist_credit_name (artist);"
+
+psql -p $PGPORT -h $PGHOST -d $DB -U $PGUSER -a -c "CREATE INDEX idx_artist_credit_name_artist_credit ON artist_credit_name (artist_credit);"
+
+psql -p $PGPORT -h $PGHOST -d $DB -U $PGUSER -a -c "CREATE EXTENSION IF NOT EXISTS pg_trgm; CREATE INDEX idx_artist_name_trgm ON artist USING gin (name gin_trgm_ops); CREATE INDEX idx_acn_name_trgm ON artist_credit_name USING gin (name gin_trgm_ops);";
+

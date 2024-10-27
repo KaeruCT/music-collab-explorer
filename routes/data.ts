@@ -20,19 +20,29 @@ export interface ArtistCollab {
 export async function searchArtists(client: PoolClient, query: string): Promise<Artist[]> {
   const result = await client.queryObject<Artist>(
     `
+    WITH filtered_artist AS (
+      SELECT id, gid, name
+      FROM artist
+      WHERE LOWER(name) LIKE '%' || LOWER($1) || '%'
+    ),
+    filtered_acn AS (
+      SELECT artist, name
+      FROM artist_credit_name
+      WHERE LOWER(name) LIKE '%' || LOWER($1) || '%'
+    )
+
     SELECT *
     FROM (
       SELECT a.id, a.gid, a.name,
         CASE 
-          WHEN a.name ILIKE $1 THEN 1
-          WHEN acn.name ILIKE $1 THEN 2
-          WHEN a.name ILIKE '%' || $1 || '%' THEN 3
-          WHEN acn.name ILIKE '%' || $1 || '%' THEN 4
+          WHEN LOWER(a.name) = LOWER($1) THEN 1
+          WHEN LOWER(acn.name) = LOWER($1) THEN 2
+          WHEN LOWER(a.name) LIKE '%' || LOWER($1) || '%' THEN 3
+          WHEN LOWER(acn.name) LIKE '%' || LOWER($1) || '%' THEN 4
           ELSE 5
         END AS relevance
-      FROM artist a
-      LEFT JOIN artist_credit_name acn ON acn.artist = a.id
-      WHERE a.name ILIKE '%' || $1 || '%' OR acn.name ILIKE '%' || $1 || '%'
+      FROM filtered_artist a
+      LEFT JOIN filtered_acn acn ON acn.artist = a.id
       GROUP BY a.id, a.gid, a.name, relevance
     ) AS grouped_artists
     ORDER BY relevance, LENGTH(name) ASC

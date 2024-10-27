@@ -1,6 +1,11 @@
 {
-  "importMap": "./import_map.json",
+  "imports": {
+    "oak": "https://deno.land/x/oak/mod.ts",
+    "postgres": "https://deno.land/x/postgres/mod.ts",
+    "dotenv": "jsr:@std/dotenv/load"
+  },
   "tasks": {
-    "start": "deno run --cert eu-central-1-bundle.pem --allow-net --allow-read --allow-env app.ts"
+    "start": "deno run --cert eu-central-1-bundle.pem --allow-net --allow-read --allow-env app.ts",
+    "dev": "deno run --watch --allow-net --allow-read --allow-env app.ts"
   }
 }

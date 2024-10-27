@@ -11,6 +11,8 @@ interface Node {
 interface Edge {
   from: string | number;
   to: string | number;
+  value: number;
+  tracks: Track[];
 }
 
 export const router = new Router();
@@ -35,7 +37,6 @@ router.get("/artists", async (ctx: ArtistSearchContext) => {
   }
 });
 
-const TRACK_COLOR = "#bbb";
 function generateColor(id: string): string {
   let hash = 0;
   for (let i = 0; i < id.length; i++) {
@@ -47,11 +48,13 @@ function generateColor(id: string): string {
   return `hsl(${hue}, 70%, 50%)`;
 }
 
+type Track = { gid: string; name: string };
 type ArtistCollabsContext = RouterContext<"/artists/:gid/collabs", { gid: string }>;
 router.get("/artists/:gid/collabs", async (ctx: ArtistCollabsContext) => {
   const { gid } = ctx.params;
   const artistIds = new Set<string>();
-  const trackIds = new Set<string>();
+
+  const edgesMap = new Map<string, { count: number; tracks: Track[] }>();
 
   const client = await pool.connect();
   try {
@@ -71,30 +74,30 @@ router.get("/artists/:gid/collabs", async (ctx: ArtistCollabsContext) => {
         });
         artistIds.add(artist.gid);
       }
-    }
+    };
 
     addArtist(startArtist);
 
     collabs.forEach(({ artist, track }) => {
-      if (!trackIds.has(track.gid)) {
-        nodes.push({
-          id: track.gid,
-          label: track.name,
-          color: TRACK_COLOR,
-        });
-        trackIds.add(track.gid);
-      }
-
       addArtist(artist);
 
-      edges.push({
-        from: track.gid,
-        to: artist.gid,
-      });
+      const edgeKey = `${startArtist.gid}|${artist.gid}`;
+      if (!edgesMap.has(edgeKey)) {
+        edgesMap.set(edgeKey, { count: 0, tracks: [] });
+      }
 
+      const edgeData = edgesMap.get(edgeKey)!;
+      edgeData.count += 1;
+      edgeData.tracks.push({ gid: track.gid, name: track.name });
+    });
+
+    edgesMap.forEach((data, key) => {
+      const [from, to] = key.split("|");
       edges.push({
-        from: track.gid,
-        to: startArtist.gid,
+        from,
+        to,
+        value: data.count,
+        tracks: data.tracks,
       });
     });
 
@@ -106,3 +109,4 @@ router.get("/artists/:gid/collabs", async (ctx: ArtistCollabsContext) => {
     client.release();
   }
 });
+
