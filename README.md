@@ -6,8 +6,7 @@
 CREATE USER musicbrainz WITH PASSWORD 'musicbrainz';
 CREATE DATABASE musicbrainz;
 ALTER DATABASE musicbrainz OWNER TO musicbrainz;
-CREATE SCHEMA musicbrainz;
-ALTER USER musicbrainz WITH SUPERUSER;
+ALTER USER musicbrainz WITH SUPERUSER; -- or GRANT rds_superuser TO musicbrainz; in AWS RDS
 GRANT ALL PRIVILEGES ON DATABASE musicbrainz TO musicbrainz;
 GRANT USAGE ON SCHEMA public TO musicbrainz;
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO musicbrainz;
