@@ -284,7 +284,7 @@ export default function App() {
         )}
       </div>
 
-      <div ref={containerRef} style={{ flexGrow: 1, position: "relative", height: "100%" }}></div>
+      <div ref={containerRef}></div>
 
       <div className="sidebar" style={{ right: 0, display: tracks.length > 0 ? "flex" : "none" }}>
         <div className="track-list">
