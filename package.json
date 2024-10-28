@@ -10,7 +10,7 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "serve": "deno run --allow-write --allow-env --allow-net --allow-read api/main.ts"
+    "start": "deno run --allow-write --allow-env --allow-net --allow-read api/main.ts"
   },
   "dependencies": {
     "react": "^18.3.1",

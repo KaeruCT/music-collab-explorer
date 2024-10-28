@@ -1,4 +1,18 @@
-# steps to fill postgres database
+## dev run
+```sh
+deno task dev
+```
+
+## build
+```sh
+deno task build
+```
+
+## run
+```sh
+deno task start
+```
+## steps to fill postgres database
 
 1. Download https://musicbrainz.org/doc/MusicBrainz_Database/Download#mbdump.tar.bz2 and place in `setup/`
 2. Create database locally

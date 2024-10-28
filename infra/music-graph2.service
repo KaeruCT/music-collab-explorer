@@ -1,0 +1,15 @@
+[Unit]
+Description=Music Graph 2 Service
+After=network.target
+
+[Service]
+User=ec2-user
+WorkingDirectory=/home/ec2-user/music-graph2
+ExecStart=/home/ec2-user/.deno/bin/deno task start
+Restart=always
+RestartSec=5
+Environment="DENO_INSTALL=/home/ec2-user/.deno"
+Environment="PATH=$DENO_INSTALL/bin:/usr/local/bin:/usr/bin:/bin"
+
+[Install]
+WantedBy=multi-user.target

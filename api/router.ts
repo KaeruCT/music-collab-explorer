@@ -1,8 +1,8 @@
 import { Router, RouterContext } from "@oak/oak";
-import pool from "./db/client.ts";
-import { Artist, getArtist, getCollabs, searchArtists } from "./data.ts";
 import { readCache, writeCache } from "./cache.ts";
-
+import { Artist, getArtist, getCollabs, searchArtists } from "./data.ts";
+import pool from "./db/client.ts";
+import { rateLimit } from "./rateLimit.ts";
 export interface Node {
   id: string | number;
   label: string;
@@ -16,6 +16,7 @@ export interface Edge {
 }
 
 export const router = new Router();
+router.use(rateLimit);
 
 type ArtistSearchContext = RouterContext<"/api/artists", { q?: string }>;
 
