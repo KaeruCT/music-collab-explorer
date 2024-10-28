@@ -2,6 +2,8 @@ import { DataSet, Network } from "vis-network/standalone";
 import React, { useEffect, useRef, useState } from "react";
 import type { Edge, Node } from "../api/router.ts";
 import type { Artist } from "../api/data.ts";
+import { generateColor } from "./colors.ts";
+import { fetchArtistImage } from "./img.ts";
 
 type ArtistCollabsResult = {
   nodes: Node[];
@@ -12,17 +14,6 @@ type EdgeWithId = Edge & { id: string };
 
 function get(path: string) {
   return fetch(`${path}`);
-}
-
-function generateColor(id: string): string {
-  let hash = 0;
-  for (let i = 0; i < id.length; i++) {
-    hash = id.charCodeAt(i) + ((hash << 5) - hash);
-  }
-
-  const hue = Math.abs(hash) % 360;
-
-  return `hsl(${hue}, 70%, 50%)`;
 }
 
 type Visu = {
@@ -113,6 +104,19 @@ export default function App() {
         color: generateColor(String(node.id))
       }));
       nodes.add(nodesToAdd);
+
+      nodesToAdd.forEach((node) => {
+        fetchArtistImage(node.label).then((imageUrl) => {
+          if (imageUrl) {
+            nodes.update({
+              id: node.id,
+              shape: "circularImage",
+              image: imageUrl
+            });
+          }
+        });
+      });
+
       const edgesToAdd = data.edges.filter(
         edge => edges.get({
           filter: item => item.from === edge.from && item.to === edge.to
@@ -172,6 +176,18 @@ export default function App() {
     }
   };
 
+  const handleRemoveArtist = (artist: Artist) => {
+    setSelectedArtists(prev => prev.filter(a => a.gid !== artist.gid));
+    if (visuRef.current) {
+      const { nodes, edges } = visuRef.current;
+      nodes.remove(artist.gid);
+      const edgesToRemove = edges.get({
+        filter: edge => edge.from === artist.gid || edge.to === artist.gid
+      });
+      edges.remove(edgesToRemove.map(edge => edge.id));
+    }
+  };
+
   return (
     <div style={{ display: "flex", height: "100vh" }}>
       <div className="sidebar" style={{ left: 0 }}>
@@ -206,9 +222,10 @@ export default function App() {
         {selectedArtists.length > 0 && (
           <div className="artist-list">
             {selectedArtists.map((artist) => (
-              <div key={artist.gid} onClick={() => scrollToArtist(artist.gid)} style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+              <div key={artist.gid} style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
                 <div className="artist-icon" style={{ backgroundColor: generateColor(artist.gid) }}></div>
                 {artist.name}
+                <span style={{ marginLeft: 'auto', cursor: 'pointer' }} onClick={() => handleRemoveArtist(artist)}>✕</span>
               </div>
             ))}
           </div>

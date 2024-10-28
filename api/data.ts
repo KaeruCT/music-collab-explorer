@@ -22,29 +22,28 @@ export async function searchArtists(client: PoolClient, query: string): Promise<
   const result = await client.queryObject<Artist>(
     `
     WITH filtered_artist AS (
-      SELECT id, gid, name, comment, last_updated
-      FROM artist
-      WHERE LOWER(name) LIKE '%' || LOWER($1) || '%'
+        SELECT id, gid, name, comment, last_updated
+        FROM artist
+        WHERE LOWER(name) LIKE '%' || LOWER($1) || '%'
     ),
     filtered_acn AS (
-      SELECT artist, name
-      FROM artist_credit_name
-      WHERE LOWER(name) LIKE '%' || LOWER($1) || '%'
+        SELECT artist, STRING_AGG(name, ', ') AS credit_names
+        FROM artist_credit_name
+        WHERE LOWER(name) LIKE '%' || LOWER($1) || '%'
+        GROUP BY artist
     )
-
     SELECT *
     FROM (
-      SELECT a.id, a.gid, a.name, a.comment, a.last_updated,
-        CASE 
-          WHEN LOWER(a.name) = LOWER($1) THEN 1
-          WHEN LOWER(acn.name) = LOWER($1) THEN 2
-          WHEN LOWER(a.name) LIKE '%' || LOWER($1) || '%' THEN 3
-          WHEN LOWER(acn.name) LIKE '%' || LOWER($1) || '%' THEN 4
-          ELSE 5
-        END AS relevance
-      FROM filtered_artist a
-      LEFT JOIN filtered_acn acn ON acn.artist = a.id
-      GROUP BY a.id, a.gid, a.name, a.comment, a.last_updated, relevance
+        SELECT a.id, a.gid, a.name, a.comment, a.last_updated,
+            CASE 
+                WHEN LOWER(a.name) = LOWER($1) THEN 1
+                WHEN acn.credit_names IS NOT NULL AND LOWER(acn.credit_names) LIKE '%' || LOWER($1) || '%' THEN 2
+                WHEN LOWER(a.name) LIKE '%' || LOWER($1) || '%' THEN 3
+                ELSE 4
+            END AS relevance
+        FROM filtered_artist a
+        LEFT JOIN filtered_acn acn ON acn.artist = a.id
+        GROUP BY a.id, a.gid, a.name, a.comment, a.last_updated, relevance
     ) AS grouped_artists
     ORDER BY relevance, LENGTH(name) ASC, last_updated DESC
     LIMIT 100;
