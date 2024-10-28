@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "deno task dev:api & deno task dev:vite",
-    "dev:api": "deno run --allow-env --allow-net --allow-read api/main.ts",
+    "dev:api": "deno run --allow-write --allow-env --allow-net --allow-read api/main.ts",
     "dev:vite": "deno run -A npm:vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",

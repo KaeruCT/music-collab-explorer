@@ -1,6 +1,7 @@
 import { Router, RouterContext } from "@oak/oak";
 import pool from "./db/client.ts";
 import { Artist, getArtist, getCollabs, searchArtists } from "./data.ts";
+import { readCache, writeCache } from "./cache.ts";
 
 export interface Node {
   id: string | number;
@@ -27,9 +28,17 @@ router.get("/api/artists", async (ctx: ArtistSearchContext) => {
     return;
   }
 
+  const key = `artists_search_${query}`;
+  const cachedData = await readCache(key);
+
+  if (cachedData) {
+    ctx.response.body = cachedData;
+    return;
+  }
   const client = await pool.connect();
   try {
     const artists = await searchArtists(client, query);
+    await writeCache(key, artists);
     ctx.response.body = artists;
   } finally {
     client.release();
@@ -43,6 +52,13 @@ router.get("/api/artists/:gid/collabs", async (ctx: ArtistCollabsContext) => {
   const artistIds = new Set<string>();
 
   const edgesMap = new Map<string, { count: number; tracks: Track[] }>();
+
+  const key = `artists_collabs_${gid}`;
+  const cachedData = await readCache(key);
+  if (cachedData) {
+    ctx.response.body = cachedData;
+    return;
+  }
 
   const client = await pool.connect();
   try {
@@ -88,10 +104,9 @@ router.get("/api/artists/:gid/collabs", async (ctx: ArtistCollabsContext) => {
       });
     });
 
-    ctx.response.body = {
-      nodes,
-      edges,
-    };
+    const response = { nodes, edges };
+    await writeCache(key, response);
+    ctx.response.body = response;
   } finally {
     client.release();
   }

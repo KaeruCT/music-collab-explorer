@@ -177,16 +177,30 @@ export default function App() {
   };
 
   const handleRemoveArtist = (artist: Artist) => {
-    setSelectedArtists(prev => prev.filter(a => a.gid !== artist.gid));
+    setSelectedArtists((prev) => prev.filter((a) => a.gid !== artist.gid));
+
     if (visuRef.current) {
       const { nodes, edges } = visuRef.current;
+
       nodes.remove(artist.gid);
+
+      // Find and remove all edges connected to the artist
       const edgesToRemove = edges.get({
-        filter: edge => edge.from === artist.gid || edge.to === artist.gid
+        filter: (edge) => edge.from === artist.gid || edge.to === artist.gid,
       });
-      edges.remove(edgesToRemove.map(edge => edge.id));
+      edges.remove(edgesToRemove.map((edge) => edge.id));
+
+      // Check for nodes with no remaining edges and remove them
+      const disconnectedNodes = nodes.get().filter((node) => {
+        const connectedEdges = edges.get({
+          filter: (edge) => edge.from === node.id || edge.to === node.id,
+        });
+        return connectedEdges.length === 0;
+      });
+      nodes.remove(disconnectedNodes.map((node) => node.id));
     }
   };
+
 
   return (
     <div style={{ display: "flex", height: "100vh" }}>
@@ -222,10 +236,10 @@ export default function App() {
         {selectedArtists.length > 0 && (
           <div className="artist-list">
             {selectedArtists.map((artist) => (
-              <div key={artist.gid} style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+              <div key={artist.gid} style={{ display: "flex", alignItems: "center", cursor: "pointer" }} onClick={() => scrollToArtist(artist.gid)}>
                 <div className="artist-icon" style={{ backgroundColor: generateColor(artist.gid) }}></div>
                 {artist.name}
-                <span style={{ marginLeft: 'auto', cursor: 'pointer' }} onClick={() => handleRemoveArtist(artist)}>✕</span>
+                <span style={{ marginLeft: "auto", cursor: "pointer" }} onClick={() => handleRemoveArtist(artist)}>✕</span>
               </div>
             ))}
           </div>
