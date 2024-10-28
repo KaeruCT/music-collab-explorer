@@ -8,7 +8,10 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
-/* CSS styles here for simplicity */
+* {
+  box-sizing: border-box;
+}
+
 body,
 html {
   height: 100%;
@@ -25,7 +28,7 @@ html {
 }
 
 .spinner {
-  border: 8px solid #f3f3f3;
+  border: 8px solid #000000;
   border-top: 8px solid #333;
   border-radius: 50%;
   width: 40px;
@@ -41,4 +44,82 @@ html {
   100% {
     transform: rotate(360deg);
   }
+}
+
+#search-form {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+  width: 100%;
+  padding: 0 10px;
+}
+
+input[type="text"] {
+  flex-grow: 1;
+  padding: 8px;
+  border: 0;
+  border-radius: 4px;
+  background-color: rgba(0, 0, 0, 0.3);
+  color: #fff;
+  width: 100%;
+}
+
+button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  background-color: #0e967b;
+  color: #fff;
+  cursor: pointer;
+  flex-shrink: 0;
+  font-weight: bold;
+}
+
+button:hover {
+  background-color: #16a085;
+}
+
+button:active {
+  background-color: #64c2af;
+}
+
+h1, h2, h3 {
+  margin: 0;
+  padding: 0;
+}
+
+.sidebar {
+  width: 280px;
+  padding: 10px;
+  background: rgba(6, 17, 42, 0.7);
+  color: #ecf0f1;
+  position: absolute;
+  top: 0;
+  height: 100%;
+  z-index: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.search-results {
+  padding: 0 8px;
+}
+.search-results > div {
+  padding: 4px 8px;
+  border-radius: 4px;
+  margin-bottom: px;
+}
+
+.artist-list {
+  border-top: #999 1px solid;
+  margin: 8px;
+  margin-top: 10px;
+  padding-top: 10px;
+}
+.artist-list > div {
+  padding: 4px 8px;
+  border-radius: 4px;
+  margin-bottom: 5px;
+  background: rgba(0, 0, 0, 0.2);
 }

@@ -21,3 +21,14 @@ cd setup/
 ```sql
 ALTER USER musicbrainz WITH NOSUPERUSER;
 ```
+
+# todos
+- change each artist in the artist list to have a colored circle the same color as the result (the payload has a color as well for each artist). the node type is:
+  - export interface Node {
+    id: string | number;
+    label: string;
+    color: string;
+  }
+- click on artist in selected artists list: should scroll to it in the visualization
+- update track list to group by artist pair (title: artist a + artist b, list: track names)
+- change loading indicator to appear on the top right corner of the left sidebar, not blocking anything anymore
