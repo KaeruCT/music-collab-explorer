@@ -13,8 +13,7 @@ app.use(rateLimit);
 app.use(router.routes());
 app.use(router.allowedMethods());
 app.use(routeStaticFilesFrom([
-  `${Deno.cwd()}/dist`,
-  `${Deno.cwd()}/public`,
+  `${Deno.cwd()}/${Deno.env.get("PUBLIC_PATH") || "public"}`,
 ]));
 
 const hostname = Deno.env.get("HOSTNAME") || "0.0.0.0";

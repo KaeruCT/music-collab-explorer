@@ -1,9 +1,33 @@
 import { DataSet, Network } from "vis-network/standalone";
 import React, { useEffect, useRef, useState } from "react";
-import type { Edge, Node } from "../api/router.ts";
-import type { Artist } from "../api/data.ts";
 import { generateColor } from "./colors.ts";
 import { fetchArtistImage } from "./img.ts";
+
+// TODO: share types? vite will compile files even if i only import types
+interface Artist {
+  id: number;
+  gid: string;
+  name: string;
+  comment?: string;
+}
+
+interface Track {
+  id: number;
+  gid: string;
+  name: string;
+}
+
+interface Node {
+  id: string | number;
+  label: string;
+}
+
+interface Edge {
+  from: string | number;
+  to: string | number;
+  value: number;
+  tracks: Track[];
+}
 
 type ArtistCollabsResult = {
   nodes: Node[];
@@ -18,7 +42,7 @@ function get(path: string) {
 
 type Visu = {
   network: Network;
-  nodes: DataSet<Node>;
+  nodes: DataSet<Node & { shape?: string; image?: string; }>;
   edges: DataSet<EdgeWithId>;
 }
 let visu: Visu | undefined = undefined;
