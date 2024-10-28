@@ -104,6 +104,7 @@ h1, h2, h3 {
 
 .search-results {
   padding: 0 8px;
+  overflow: auto;
 }
 .search-results > div {
   padding: 4px 8px;

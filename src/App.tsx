@@ -48,7 +48,7 @@ export default function App() {
   const [selectedArtists, setSelectedArtists] = useState<Artist[]>([]);
   const [loading, setLoading] = useState(false);
   const [tracks, setTracks] = useState<string[]>([]);
-  const [searching, setSearching] = useState(false);
+  const [searching, setSearching] = useState<boolean | undefined>(undefined);
 
   const selectedArtistIds = new Set(selectedArtists.map(artist => artist.gid));
 
@@ -139,27 +139,32 @@ export default function App() {
           </button>
         </form>
         <div className="search-results">
-          {searching && <div>Searching...</div>}
-          {searchResults.map((result) => (
+          {searching === true && <div>Searching...</div>}
+          {searching === false && searchResults.length > 0 && searchResults.map((result) => (
             <div
               key={result.gid}
               onClick={() => handleSelectArtist(result)}
               style={{
                 cursor: selectedArtistIds.has(result.gid) ? "not-allowed" : "pointer",
-                opacity: selectedArtistIds.has(result.gid) ? 0.5 : 1,
+                opacity: selectedArtistIds.has(result.gid) ? 0.6 : 1,
               }}
             >
-              {result.name}
+              {result.name}{result.comment ? ` (${result.comment})` : ""}
             </div>
           ))}
+          {searching === false && searchResults.length === 0 && <div>No results</div>}
         </div>
-        <div className="artist-list">
-          {selectedArtists.map((artist) => (
-            <div key={artist.gid}>
-              {artist.name}
-            </div>
-          ))}
-        </div>
+        {selectedArtists.length > 0 && (
+          <div className="artist-list">
+            {selectedArtists.map((artist) => (
+              <div key={artist.gid}>
+                {artist.name}
+              </div>
+            ))}
+          </div>
+        )
+        }
+
       </div>
 
       <div ref={containerRef} style={{ flexGrow: 1, position: "relative", height: "100%" }}></div>

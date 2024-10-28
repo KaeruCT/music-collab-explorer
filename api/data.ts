@@ -4,6 +4,7 @@ export interface Artist {
   id: number;
   gid: string;
   name: string;
+  comment?: string;
 }
 
 export interface Track {
@@ -21,7 +22,7 @@ export async function searchArtists(client: PoolClient, query: string): Promise<
   const result = await client.queryObject<Artist>(
     `
     WITH filtered_artist AS (
-      SELECT id, gid, name
+      SELECT id, gid, name, comment, last_updated
       FROM artist
       WHERE LOWER(name) LIKE '%' || LOWER($1) || '%'
     ),
@@ -33,7 +34,7 @@ export async function searchArtists(client: PoolClient, query: string): Promise<
 
     SELECT *
     FROM (
-      SELECT a.id, a.gid, a.name,
+      SELECT a.id, a.gid, a.name, a.comment, a.last_updated,
         CASE 
           WHEN LOWER(a.name) = LOWER($1) THEN 1
           WHEN LOWER(acn.name) = LOWER($1) THEN 2
@@ -43,9 +44,9 @@ export async function searchArtists(client: PoolClient, query: string): Promise<
         END AS relevance
       FROM filtered_artist a
       LEFT JOIN filtered_acn acn ON acn.artist = a.id
-      GROUP BY a.id, a.gid, a.name, relevance
+      GROUP BY a.id, a.gid, a.name, a.comment, a.last_updated, relevance
     ) AS grouped_artists
-    ORDER BY relevance, LENGTH(name) ASC
+    ORDER BY relevance, LENGTH(name) ASC, last_updated DESC
     LIMIT 100;
     `,
     [query]
@@ -56,7 +57,7 @@ export async function searchArtists(client: PoolClient, query: string): Promise<
 
 export async function getArtist(client: PoolClient, artistGid: string): Promise<Artist> {
   const q = `
-    SELECT id, gid, name
+    SELECT id, gid, name, comment
     FROM artist
     WHERE gid = $1::uuid
     LIMIT 1;
@@ -73,17 +74,19 @@ export async function getArtist(client: PoolClient, artistGid: string): Promise<
     id: row.id,
     gid: row.gid,
     name: row.name,
+    comment: row.comment,
   };
 }
 
 export async function getCollabs(client: PoolClient, gid: string): Promise<ArtistCollab[]> {
   const q = `
-    SELECT artist_id, artist_gid, artist_name, track_id, track_gid, track_name
+    SELECT artist_id, artist_gid, artist_name, artist_comment, track_id, track_gid, track_name
     FROM (
       SELECT 
         a2.id AS artist_id,
         a2.gid AS artist_gid,
         a2.name AS artist_name,
+        a2.comment AS artist_comment,
         t.id AS track_id,
         t.gid AS track_gid,
         t.name AS track_name,
@@ -106,6 +109,7 @@ export async function getCollabs(client: PoolClient, gid: string): Promise<Artis
     artist_id: number;
     artist_gid: string;
     artist_name: string;
+    artist_comment?: string;
     track_id: number;
     track_gid: string;
     track_name: string;
@@ -117,6 +121,7 @@ export async function getCollabs(client: PoolClient, gid: string): Promise<Artis
       id: row.artist_id,
       gid: row.artist_gid,
       name: row.artist_name,
+      comment: row.artist_comment,
     },
     track: {
       id: row.track_id,
