@@ -6,7 +6,7 @@ ssh -i "music-graph2.pem" ec2-user@ec2-18-199-122-244.eu-central-1.compute.amazo
   deno task build
   # Copy service file
   sudo cp ./infra/music-graph2.service /etc/systemd/system/music-graph2.service
-  # Restart service
+  systemctl daemon-reload
   sudo systemctl stop music-graph2.service
   sudo systemctl start music-graph2.service
 EOF
