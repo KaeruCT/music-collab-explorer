@@ -5,7 +5,6 @@ import { Artist, getArtist, getCollabs, searchArtists } from "./data.ts";
 export interface Node {
   id: string | number;
   label: string;
-  color: string;
 }
 
 export interface Edge {
@@ -37,17 +36,6 @@ router.get("/api/artists", async (ctx: ArtistSearchContext) => {
   }
 });
 
-function generateColor(id: string): string {
-  let hash = 0;
-  for (let i = 0; i < id.length; i++) {
-    hash = id.charCodeAt(i) + ((hash << 5) - hash);
-  }
-
-  const hue = Math.abs(hash) % 360;
-
-  return `hsl(${hue}, 70%, 50%)`;
-}
-
 type Track = { gid: string; name: string };
 type ArtistCollabsContext = RouterContext<"/api/artists/:gid/collabs", { gid: string }>;
 router.get("/api/artists/:gid/collabs", async (ctx: ArtistCollabsContext) => {
@@ -70,7 +58,6 @@ router.get("/api/artists/:gid/collabs", async (ctx: ArtistCollabsContext) => {
         nodes.push({
           id: artist.gid,
           label: artist.name,
-          color: generateColor(artist.gid),
         });
         artistIds.add(artist.gid);
       }

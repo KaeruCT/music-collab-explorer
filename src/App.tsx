@@ -14,16 +14,26 @@ function get(path: string) {
   return fetch(`${path}`);
 }
 
+function generateColor(id: string): string {
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) {
+    hash = id.charCodeAt(i) + ((hash << 5) - hash);
+  }
+
+  const hue = Math.abs(hash) % 360;
+
+  return `hsl(${hue}, 70%, 50%)`;
+}
+
 type Visu = {
   network: Network;
   nodes: DataSet<Node>;
   edges: DataSet<EdgeWithId>;
 }
 let visu: Visu | undefined = undefined;
+
 function initVisu(container: HTMLDivElement): Visu {
-  if (visu) {
-    return visu;
-  }
+  if (visu) return visu;
 
   const nodes = new DataSet<Node>([]);
   const edges = new DataSet<EdgeWithId>([]);
@@ -34,20 +44,19 @@ function initVisu(container: HTMLDivElement): Visu {
     physics: { forceAtlas2Based: { gravitationalConstant: -26, centralGravity: 0.005, springLength: 230, springConstant: 0.18 }, maxVelocity: 146, solver: "forceAtlas2Based", timestep: 0.35, stabilization: false },
     layout: { improvedLayout: false }
   });
-  visu = {
-    network,
-    nodes,
-    edges
-  };
+
+  visu = { network, nodes, edges };
   return visu;
 }
+
+type CollabTracks = { title: string, tracks: string[] };
 
 export default function App() {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [searchResults, setSearchResults] = useState<Artist[]>([]);
   const [selectedArtists, setSelectedArtists] = useState<Artist[]>([]);
   const [loading, setLoading] = useState(false);
-  const [tracks, setTracks] = useState<string[]>([]);
+  const [tracks, setTracks] = useState<CollabTracks[]>([]);
   const [searching, setSearching] = useState<boolean | undefined>(undefined);
 
   const selectedArtistIds = new Set(selectedArtists.map(artist => artist.gid));
@@ -56,9 +65,7 @@ export default function App() {
   const visuRef = useRef<Visu | null>(null);
 
   useEffect(() => {
-    if (!containerRef.current) {
-      return;
-    }
+    if (!containerRef.current) return;
     visuRef.current = initVisu(containerRef.current);
     visuRef.current?.network.on("click", handleEdgeClick);
 
@@ -69,7 +76,11 @@ export default function App() {
 
   const handleSearchSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!searchQuery) return;
+    if (!searchQuery) {
+      setSearchResults([]);
+      setSearching(undefined);
+      return;
+    }
 
     setSearching(true);
     try {
@@ -97,7 +108,10 @@ export default function App() {
     try {
       const response = await get(`/api/artists/${gid}/collabs`);
       const data: ArtistCollabsResult = await response.json();
-      const nodesToAdd = data.nodes.filter(node => !nodes.get(node.id));
+      const nodesToAdd = data.nodes.filter(node => !nodes.get(node.id)).map(node => ({
+        ...node,
+        color: generateColor(String(node.id))
+      }));
       nodes.add(nodesToAdd);
       const edgesToAdd = data.edges.filter(
         edge => edges.get({
@@ -112,32 +126,66 @@ export default function App() {
     }
   };
 
-  const handleEdgeClick = (params: { nodes: Node[], edges: EdgeWithId[] }) => {
+  const handleEdgeClick = (params: { nodes: string[], edges: string[] }) => {
     if (!visuRef.current) return;
     const { edges } = visuRef.current;
+    let artist: Node | null | undefined;
+    if (params.nodes.length === 1) {
+      artist = visu?.nodes.get(params.nodes[0]);
+    }
+    if (!artist) {
+      setTracks([]);
+      return;
+    }
     if (params.edges.length !== 0) {
-      const tracks = params.edges.flatMap(edge => edges.get(edge).tracks.map(track => track.name));
-      setTracks(tracks);
+      const groupedTracks = params.edges.map(id => {
+        const edge = edges.get(id);
+        if (!edge) {
+          return;
+        }
+        const artist1 = visu?.nodes.get(edge.from);
+        const artist2 = visu?.nodes.get(edge.to);
+        let artistA: Node | null | undefined;
+        let artistB: Node | null | undefined;
+
+        if (artist.label === artist1?.label) {
+          artistA = artist1;
+          artistB = artist2;
+        } else {
+          artistA = artist2;
+          artistB = artist1;
+        }
+        const title = `${artistA?.label} + ${artistB?.label}`;
+        return { title, tracks: edge.tracks.map(track => track.name) };
+      }).filter((track): track is CollabTracks => track !== undefined);
+
+      if (groupedTracks) {
+        setTracks(groupedTracks as CollabTracks[]);
+      }
+    }
+  };
+
+  const scrollToArtist = (artistId: string | number) => {
+    const node = visuRef.current?.nodes.get(artistId);
+    if (node) {
+      visuRef.current?.network.focus(artistId, { scale: 1.5 });
     }
   };
 
   return (
     <div style={{ display: "flex", height: "100vh" }}>
-      <div
-        className="sidebar"
-        style={{ left: 0 }}
-      >
+      <div className="sidebar" style={{ left: 0 }}>
         <form id="search-form" onSubmit={handleSearchSubmit}>
           <input
             type="text"
             placeholder="Search for artist"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
+            autoFocus
           />
-          <button type="submit">
-            Search
-          </button>
+          <button type="submit">Search</button>
         </form>
+
         <div className="search-results">
           {searching === true && <div>Searching...</div>}
           {searching === false && searchResults.length > 0 && searchResults.map((result) => (
@@ -154,43 +202,38 @@ export default function App() {
           ))}
           {searching === false && searchResults.length === 0 && <div>No results</div>}
         </div>
+
         {selectedArtists.length > 0 && (
           <div className="artist-list">
             {selectedArtists.map((artist) => (
-              <div key={artist.gid}>
+              <div key={artist.gid} onClick={() => scrollToArtist(artist.gid)} style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+                <div className="artist-icon" style={{ backgroundColor: generateColor(artist.gid) }}></div>
                 {artist.name}
               </div>
             ))}
           </div>
-        )
-        }
-
+        )}
       </div>
 
       <div ref={containerRef} style={{ flexGrow: 1, position: "relative", height: "100%" }}></div>
 
-      <div
-        className="sidebar"
-        style={{ right: 0, display: tracks.length > 0 ? "flex" : "none" }}>
-        <h3>Tracks</h3>
-        <div style={{ overflow: "auto" }}>
-          {tracks.map((track, idx) => <div key={idx}>{track}</div>)}
+      <div className="sidebar" style={{ right: 0, display: tracks.length > 0 ? "flex" : "none" }}>
+        <div className="track-list">
+          {tracks.map((group, idx) => (
+            <div key={idx}>
+              <h4>{group.title}</h4>
+              {group.tracks.map((track, tIdx) => <div key={tIdx}>{track}</div>)}
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* Loading Overlay */}
       {loading && (
         <div
           style={{
             position: "fixed",
-            top: 0,
-            left: 0,
-            width: "100vw",
-            height: "100vh",
-            background: "rgba(0, 0, 0, 0.3)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
+            top: "10px",
+            left: "290px",
             zIndex: 10
           }}
         >

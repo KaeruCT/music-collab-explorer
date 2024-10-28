@@ -28,8 +28,8 @@ html {
 }
 
 .spinner {
-  border: 8px solid #000000;
-  border-top: 8px solid #333;
+  border: 8px solid #aaa;
+  border-top: 8px solid transparent;
   border-radius: 50%;
   width: 40px;
   height: 40px;
@@ -48,10 +48,10 @@ html {
 
 #search-form {
   display: flex;
-  gap: 10px;
+  gap: 8px;
   margin-bottom: 20px;
   width: 100%;
-  padding: 0 10px;
+  padding: 0 8px;
 }
 
 input[type="text"] {
@@ -83,15 +83,15 @@ button:active {
   background-color: #64c2af;
 }
 
-h1, h2, h3 {
+h1, h2, h3, h4 {
   margin: 0;
   padding: 0;
 }
 
 .sidebar {
   width: 280px;
-  padding: 10px;
-  background: rgba(6, 17, 42, 0.7);
+  padding: 8px;
+  background: rgba(6, 17, 42, 0.92);
   color: #ecf0f1;
   position: absolute;
   top: 0;
@@ -109,18 +109,45 @@ h1, h2, h3 {
 .search-results > div {
   padding: 4px 8px;
   border-radius: 4px;
-  margin-bottom: px;
+  background: rgba(255, 255, 255, 0.1);
+  margin-bottom: 4px;
+}
+.search-results > div:last-child {
+  margin-bottom: 0;
+}
+
+.search-results > div:hover {
+  background: rgba(255, 255, 255, 0.2);
 }
 
 .artist-list {
-  border-top: #999 1px solid;
+  border-top: rgba(255, 255, 255, 0.2) 1px solid;
   margin: 8px;
-  margin-top: 10px;
-  padding-top: 10px;
+  padding-top: 8px;
 }
 .artist-list > div {
   padding: 4px 8px;
   border-radius: 4px;
-  margin-bottom: 5px;
-  background: rgba(0, 0, 0, 0.2);
+  margin-bottom: 4px;
+  background: rgba(255, 255, 255, 0.1);
+}
+.artist-list > div:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+.artist-icon {
+  width: 12px;
+  height: 12px; 
+  border-radius: 50%;
+  margin-right: 8px;
+  border: 1px solid #fff;
+}
+
+.track-list {
+  overflow: auto;
+}
+.track-list > div {
+  padding: 4px 8px;
+  border-radius: 4px;
+  margin-bottom: 4px;
+  background: rgba(255, 255, 255, 0.1);
 }
