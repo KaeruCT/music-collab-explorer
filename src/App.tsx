@@ -45,7 +45,7 @@ type CollabTracks = { title: string, tracks: string[] };
 export default function App() {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [searchResults, setSearchResults] = useState<Artist[]>([]);
-  const [selectedArtists, setSelectedArtists] = useState<Artist[]>([]);
+  const [selectedArtists, setSelectedArtists] = useState<Pick<Artist, "gid" | "name">[]>([]);
   const [loading, setLoading] = useState(false);
   const [tracks, setTracks] = useState<CollabTracks[]>([]);
   const [searching, setSearching] = useState<boolean | undefined>(undefined);
@@ -58,10 +58,12 @@ export default function App() {
   useEffect(() => {
     if (!containerRef.current) return;
     visuRef.current = initVisu(containerRef.current);
-    visuRef.current?.network.on("click", handleEdgeClick);
+    visuRef.current?.network.on("click", handleClick);
+    visuRef.current?.network.on("doubleClick", handleDoubleClick);
 
     return () => {
       visuRef.current?.network.off("click");
+      visuRef.current?.network.off("doubleClick");
     };
   }, []);
 
@@ -85,7 +87,7 @@ export default function App() {
     }
   };
 
-  const handleSelectArtist = async (artist: Artist) => {
+  const handleSelectArtist = async (artist: Pick<Artist, "gid" | "name">) => {
     if (selectedArtistIds.has(artist.gid)) return;
     selectedArtistIds.add(artist.gid);
     setSelectedArtists((prev) => [...prev, artist]);
@@ -130,7 +132,19 @@ export default function App() {
     }
   };
 
-  const handleEdgeClick = (params: { nodes: string[], edges: string[] }) => {
+  const handleDoubleClick = (params: { nodes: string[] }) => {
+    if (params.nodes.length === 1) {
+      const artistNode: Node | undefined | null = visuRef.current?.nodes.get(params.nodes[0]);
+      if (artistNode) {
+        handleSelectArtist({
+          gid: String(artistNode.id),
+          name: artistNode.label,
+        });
+      }
+    }
+  };
+
+  const handleClick = (params: { nodes: string[], edges: string[] }) => {
     if (!visuRef.current) return;
     const { edges } = visuRef.current;
     let artist: Node | null | undefined;
@@ -172,11 +186,11 @@ export default function App() {
   const scrollToArtist = (artistId: string | number) => {
     const node = visuRef.current?.nodes.get(artistId);
     if (node) {
-      visuRef.current?.network.focus(artistId, { scale: 1.5 });
+      visuRef.current?.network.focus(artistId, { scale: 1.5, animation: true });
     }
   };
 
-  const handleRemoveArtist = (artist: Artist) => {
+  const handleRemoveArtist = (artist: Pick<Artist, "name" | "gid">) => {
     setSelectedArtists((prev) => prev.filter((a) => a.gid !== artist.gid));
 
     if (visuRef.current) {
