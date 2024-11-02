@@ -1,5 +1,5 @@
 import { DataSet, Network } from "vis-network/standalone";
-import React, { useEffect, useRef, useState, useMemo } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { generateColor } from "./colors.ts";
 import { fetchArtistImage } from "./img.ts";
 

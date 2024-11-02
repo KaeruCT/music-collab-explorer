@@ -1,5 +1,5 @@
 #!/bin/sh
-ssh -i "music-graph2.pem" ec2-user@ec2-18-199-122-244.eu-central-1.compute.amazonaws.com << EOF
+ssh -i "music-graph2.pem" ec2-user@ec2-3-68-83-97.eu-central-1.compute.amazonaws.com << EOF
   cd /home/ec2-user/music-graph2
   git pull
   deno i
