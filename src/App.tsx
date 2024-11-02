@@ -1,5 +1,5 @@
 import { DataSet, Network } from "vis-network/standalone";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useMemo } from "react";
 import { generateColor } from "./colors.ts";
 import { fetchArtistImage } from "./img.ts";
 
@@ -55,8 +55,26 @@ function initVisu(container: HTMLDivElement): Visu {
 
   const network = new Network(container, { nodes, edges }, {
     interaction: { hideEdgesOnDrag: true },
-    nodes: { shape: "dot", size: 16 },
-    physics: { forceAtlas2Based: { gravitationalConstant: -26, centralGravity: 0.005, springLength: 230, springConstant: 0.18 }, maxVelocity: 146, solver: "forceAtlas2Based", timestep: 0.35, stabilization: false },
+    nodes: {
+      shape: "dot",
+      size: 16,
+      font: {
+        color: "#f0f0f0",
+        size: 12,
+      }
+    },
+    physics: {
+      forceAtlas2Based: {
+        gravitationalConstant: -26,
+        centralGravity: 0.005,
+        springLength: 230,
+        springConstant: 0.18
+      },
+      maxVelocity: 146,
+      solver: "forceAtlas2Based",
+      timestep: 0.35,
+      stabilization: false
+    },
     layout: { improvedLayout: false }
   });
 
@@ -66,10 +84,13 @@ function initVisu(container: HTMLDivElement): Visu {
 
 type CollabTracks = { title: string, tracks: string[] };
 
+type SelectedArtist = Pick<Artist, "gid" | "name">;
+
 export default function App() {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [searchResults, setSearchResults] = useState<Artist[]>([]);
-  const [selectedArtists, setSelectedArtists] = useState<Pick<Artist, "gid" | "name">[]>([]);
+  const [selectedArtists, setSelectedArtists] = useState<SelectedArtist[]>([]);
+  const [initDone, setInitDone] = useState(false);
   const [loading, setLoading] = useState(false);
   const [tracks, setTracks] = useState<CollabTracks[]>([]);
   const [searching, setSearching] = useState<boolean | undefined>(undefined);
@@ -78,6 +99,26 @@ export default function App() {
 
   const containerRef = useRef<HTMLDivElement | null>(null);
   const visuRef = useRef<Visu | null>(null);
+
+  useEffect(() => {
+    if (initDone) return;
+
+    async function init() {
+      const selectedArtists: SelectedArtist[] = JSON.parse(localStorage.getItem("selectedArtists") || "[]");
+      setSelectedArtists(selectedArtists);
+      await Promise.all(selectedArtists.map(artist => addArtistCollabs(artist.gid)));
+      setTimeout(() => {
+        visuRef.current?.network.fit();
+        setInitDone(true);
+      }, 500);
+    }
+    init();
+  }, [initDone]);
+
+  useEffect(() => {
+    if (!initDone) return;
+    localStorage.setItem("selectedArtists", JSON.stringify(selectedArtists));
+  }, [initDone, selectedArtists, selectedArtists.length]);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -113,7 +154,6 @@ export default function App() {
 
   const handleSelectArtist = async (artist: Pick<Artist, "gid" | "name">) => {
     if (selectedArtistIds.has(artist.gid)) return;
-    selectedArtistIds.add(artist.gid);
     setSelectedArtists((prev) => [...prev, artist]);
     await addArtistCollabs(artist.gid);
   };
@@ -171,39 +211,39 @@ export default function App() {
   const handleClick = (params: { nodes: string[], edges: string[] }) => {
     if (!visuRef.current) return;
     const { edges } = visuRef.current;
-    let artist: Node | null | undefined;
-    if (params.nodes.length === 1) {
-      artist = visu?.nodes.get(params.nodes[0]);
-    }
+    const artist = visu?.nodes.get(params.nodes[0]);
     if (!artist) {
+      return;
+    }
+
+    if (params.nodes.length === 0) {
       setTracks([]);
       return;
     }
-    if (params.edges.length !== 0) {
-      const groupedTracks = params.edges.map(id => {
-        const edge = edges.get(id);
-        if (!edge) {
-          return;
-        }
-        const artist1 = visu?.nodes.get(edge.from);
-        const artist2 = visu?.nodes.get(edge.to);
-        let artistA: Node | null | undefined;
-        let artistB: Node | null | undefined;
 
-        if (artist.label === artist1?.label) {
-          artistA = artist1;
-          artistB = artist2;
-        } else {
-          artistA = artist2;
-          artistB = artist1;
-        }
-        const title = `${artistA?.label} + ${artistB?.label}`;
-        return { title, tracks: edge.tracks.map(track => track.name) };
-      }).filter((track): track is CollabTracks => track !== undefined);
-
-      if (groupedTracks) {
-        setTracks(groupedTracks as CollabTracks[]);
+    const groupedTracks = params.edges.map(id => {
+      const edge = edges.get(id);
+      if (!edge) {
+        return;
       }
+      const artist1 = visu?.nodes.get(edge.from);
+      const artist2 = visu?.nodes.get(edge.to);
+      let artistA: Node | null | undefined;
+      let artistB: Node | null | undefined;
+
+      if (artist.label === artist1?.label) {
+        artistA = artist1;
+        artistB = artist2;
+      } else {
+        artistA = artist2;
+        artistB = artist1;
+      }
+      const title = `${artistA?.label} + ${artistB?.label}`;
+      return { title, tracks: edge.tracks.map(track => track.name) };
+    }).filter((track): track is CollabTracks => track !== undefined);
+
+    if (groupedTracks) {
+      setTracks(groupedTracks as CollabTracks[]);
     }
   };
 
@@ -245,7 +285,7 @@ export default function App() {
       <div className="sidebar" style={{ left: 0 }}>
         <form id="search-form" onSubmit={handleSearchSubmit}>
           <input
-            type="text"
+            type="search"
             placeholder="Search for artist"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -253,6 +293,7 @@ export default function App() {
           />
           <button type="submit">Search</button>
         </form>
+
 
         <div className="search-results">
           {searching === true && <div>Searching...</div>}
@@ -297,7 +338,7 @@ export default function App() {
         </div>
       </div>
 
-      {loading && (
+      {(loading || !initDone) && (
         <div
           style={{
             position: "fixed",
