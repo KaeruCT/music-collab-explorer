@@ -29,12 +29,12 @@ html {
 }
 
 .spinner {
-  border: 8px solid #666;
-  border-top: 8px solid transparent;
-  border-radius: 50%;
   width: 40px;
   height: 40px;
+  border-radius: 50%;
+  background: conic-gradient(rgba(255, 255, 255, 0.05), #2a568d);
   animation: spin 1s linear infinite;
+  mask: radial-gradient(farthest-side, transparent calc(100% - 8px), #000 calc(100% - 8px));
 }
 
 @keyframes spin {
@@ -63,6 +63,21 @@ input[type="text"], input[type="search"] {
   background-color: rgba(0, 0, 0, 0.3);
   color: #fff;
   width: 100%;
+}
+
+.sidebar a {
+  color: #f0f0f0;
+  text-decoration: none;
+  transition: color 0.3s, text-decoration 0.3s;
+  padding: 4px 8px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  margin-bottom: 4px;
+}
+
+.sidebar a:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: #8ac1db;
 }
 
 button {
@@ -150,5 +165,16 @@ h1, h2, h3, h4 {
   padding: 4px 8px;
   border-radius: 4px;
   margin-bottom: 4px;
-  background: rgba(255, 255, 255, 0.1);
+}
+.track-list h4 {
+  padding: 4px 8px;
+  border-radius: 4px;
+  margin-bottom: 4px;
+  color: #d5d5d5;
+  transition: background 0.2s;
+}
+
+.track-list .stuck h4 {
+  background: rgba(5, 10, 33, 0.85);
+  border-radius: 0;
 }

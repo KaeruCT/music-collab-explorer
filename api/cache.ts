@@ -2,6 +2,8 @@ import { join } from "node:path";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 const CACHE_DIR = join(Deno.env.get("TMPDIR") || "/tmp", "app_cache");
 
+console.info("CACHE_DIR", CACHE_DIR);
+
 async function ensureCacheDir() {
   await mkdir(CACHE_DIR, { recursive: true });
 }

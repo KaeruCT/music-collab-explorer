@@ -96,7 +96,7 @@ router.get("/api/artists/:gid/collabs", async (ctx: ArtistCollabsContext) => {
     });
 
     edgesMap.forEach((data, key) => {
-      const [from, to] = key.split("|");
+      const [to, from] = key.split("|");
       edges.push({
         from,
         to,

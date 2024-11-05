@@ -2,6 +2,8 @@ import { DataSet, Network } from "vis-network/standalone";
 import React, { useEffect, useRef, useState } from "react";
 import { generateColor } from "./colors.ts";
 import { fetchArtistImage } from "./img.ts";
+import { TrackInfo } from "./TrackInfo.tsx";
+import Sticky from "./Sticky.tsx";
 
 // TODO: share types? vite will compile files even if i only import types
 interface Artist {
@@ -82,7 +84,7 @@ function initVisu(container: HTMLDivElement): Visu {
   return visu;
 }
 
-type CollabTracks = { title: string, tracks: string[] };
+type CollabTracks = { artistA: string, artistB: string, tracks: string[] };
 
 type SelectedArtist = Pick<Artist, "gid" | "name">;
 
@@ -101,9 +103,20 @@ export default function App() {
   const visuRef = useRef<Visu | null>(null);
 
   useEffect(() => {
+    if (!initDone) return;
+    localStorage.setItem("selectedArtists", JSON.stringify(selectedArtists));
+  }, [initDone, selectedArtists, selectedArtists.length]);
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+
+    visuRef.current = initVisu(containerRef.current);
+    visuRef.current?.network.on("click", handleClick);
+    visuRef.current?.network.on("doubleClick", handleDoubleClick);
+
     if (initDone) return;
 
-    async function init() {
+    async function restoreFromLocalStorage() {
       const selectedArtists: SelectedArtist[] = JSON.parse(localStorage.getItem("selectedArtists") || "[]");
       setSelectedArtists(selectedArtists);
       await Promise.all(selectedArtists.map(artist => addArtistCollabs(artist.gid)));
@@ -112,25 +125,13 @@ export default function App() {
         setInitDone(true);
       }, 500);
     }
-    init();
-  }, [initDone]);
-
-  useEffect(() => {
-    if (!initDone) return;
-    localStorage.setItem("selectedArtists", JSON.stringify(selectedArtists));
-  }, [initDone, selectedArtists, selectedArtists.length]);
-
-  useEffect(() => {
-    if (!containerRef.current) return;
-    visuRef.current = initVisu(containerRef.current);
-    visuRef.current?.network.on("click", handleClick);
-    visuRef.current?.network.on("doubleClick", handleDoubleClick);
+    restoreFromLocalStorage();
 
     return () => {
       visuRef.current?.network.off("click");
       visuRef.current?.network.off("doubleClick");
     };
-  }, []);
+  }, [initDone]);
 
   const handleSearchSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -212,11 +213,8 @@ export default function App() {
     if (!visuRef.current) return;
     const { edges } = visuRef.current;
     const artist = visu?.nodes.get(params.nodes[0]);
-    if (!artist) {
-      return;
-    }
 
-    if (params.nodes.length === 0) {
+    if (params.nodes.length === 0 && params.edges.length === 0) {
       setTracks([]);
       return;
     }
@@ -231,15 +229,18 @@ export default function App() {
       let artistA: Node | null | undefined;
       let artistB: Node | null | undefined;
 
-      if (artist.label === artist1?.label) {
+      if (artist?.label === artist1?.label) {
         artistA = artist1;
         artistB = artist2;
       } else {
         artistA = artist2;
         artistB = artist1;
       }
-      const title = `${artistA?.label} + ${artistB?.label}`;
-      return { title, tracks: edge.tracks.map(track => track.name) };
+      return {
+        artistA: artistA?.label ?? "",
+        artistB: artistB?.label ?? "",
+        tracks: edge.tracks.map(track => track.name)
+      };
     }).filter((track): track is CollabTracks => track !== undefined);
 
     if (groupedTracks) {
@@ -329,10 +330,12 @@ export default function App() {
 
       <div className="sidebar" style={{ right: 0, display: tracks.length > 0 ? "flex" : "none" }}>
         <div className="track-list">
-          {tracks.map((group, idx) => (
+          {tracks.map((trackList, idx) => (
             <div key={idx}>
-              <h4>{group.title}</h4>
-              {group.tracks.map((track, tIdx) => <div key={tIdx}>{track}</div>)}
+              <Sticky><h4>{`${trackList.artistA} & ${trackList.artistB}`}</h4></Sticky>
+              {trackList.tracks.map((track, tIdx) => (
+                <TrackInfo key={tIdx} title={track} artistA={trackList.artistA} artistB={trackList.artistB} />
+              ))}
             </div>
           ))}
         </div>
