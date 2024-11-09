@@ -32,10 +32,10 @@ router.get("/api/artists", async (ctx: ArtistSearchContext) => {
   const key = `artists_search_${query}`;
   const cachedData = await readCache(key);
 
-  // if (cachedData) {
-  //   ctx.response.body = cachedData;
-  //   return;
-  // }
+  if (cachedData) {
+    ctx.response.body = cachedData;
+    return;
+  }
   const client = await pool.connect();
   try {
     const artists = await searchArtists(client, query);
