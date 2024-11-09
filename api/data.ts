@@ -19,7 +19,7 @@ export interface ArtistCollab {
 }
 
 export async function searchArtists(client: PoolClient, query: string): Promise<Artist[]> {
-  const search = query.toLowerCase().replace(/\s+/g, " ").replaceAll(",", "");
+  const search = query.toLowerCase().replace(/\s+/g, " ");
   const result = await client.queryObject<Artist>(
     `
     WITH filtered_artist AS (
@@ -81,7 +81,7 @@ export async function getArtist(client: PoolClient, artistGid: string): Promise<
 export async function getCollabs(client: PoolClient, gid: string): Promise<ArtistCollab[]> {
   const q = `
     WITH track_collaborations AS (
-    SELECT 
+      SELECT 
         a2.id AS artist_id,
         a2.gid AS artist_gid,
         a2.name AS artist_name,
@@ -90,50 +90,48 @@ export async function getCollabs(client: PoolClient, gid: string): Promise<Artis
         t.gid AS track_gid,
         t.name AS track_name,
         COUNT(DISTINCT acn2.artist) AS collaborator_count
-    FROM 
+      FROM 
         artist a
-    RIGHT JOIN 
+      RIGHT JOIN 
         artist_credit_name acn ON acn.artist = a.id
-    RIGHT JOIN 
+      RIGHT JOIN 
         artist_credit ac ON acn.artist_credit = ac.id
-    RIGHT JOIN 
+      RIGHT JOIN 
         artist_credit_name acn2 ON acn2.artist_credit = ac.id AND acn2.artist <> a.id
-    RIGHT JOIN 
+      RIGHT JOIN 
         artist a2 ON a2.id = acn2.artist
-    RIGHT JOIN 
+      RIGHT JOIN 
         track t ON t.artist_credit = ac.id
-    WHERE 
+      WHERE 
         a.gid = $1::uuid
-        AND LENGTH(t.name) <= 50
-    GROUP BY 
+      GROUP BY 
         a2.id, a2.gid, a2.name, a2.comment, t.id, t.gid, t.name
-      )
+    )
     SELECT 
+      artist_id, 
+      artist_gid, 
+      artist_name, 
+      artist_comment, 
+      track_id, 
+      track_gid, 
+      track_name
+    FROM (
+      SELECT 
         artist_id, 
         artist_gid, 
         artist_name, 
         artist_comment, 
         track_id, 
         track_gid, 
-        track_name
-    FROM 
-        (
-            SELECT 
-                artist_id, 
-                artist_gid, 
-                artist_name, 
-                artist_comment, 
-                track_id, 
-                track_gid, 
-                track_name,
-                ROW_NUMBER() OVER (PARTITION BY artist_gid, track_name ORDER BY collaborator_count DESC) AS row_num
-            FROM 
-                track_collaborations
-        ) AS ranked_tracks
+        track_name,
+        ROW_NUMBER() OVER (PARTITION BY artist_gid, track_name ORDER BY collaborator_count DESC) AS row_num
+      FROM 
+        track_collaborations
+    ) AS ranked_tracks
     WHERE 
-        row_num = 1
+      row_num = 1
     ORDER BY 
-        track_name, artist_name;
+      track_name, artist_name;
     `;
 
   type ArtistResult = {
@@ -147,7 +145,11 @@ export async function getCollabs(client: PoolClient, gid: string): Promise<Artis
   };
 
   const res = await client.queryObject<ArtistResult>(q, [gid]);
-  return res.rows.map(row => ({
+  return res.rows.filter(row => {
+    // there are some weird tracks with long-ass names
+    // filter here because in the query it might affect performance (?)
+    return row.track_name.length <= 50;
+  }).map(row => ({
     artist: {
       id: row.artist_id,
       gid: row.artist_gid,
