@@ -92,6 +92,7 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [searchResults, setSearchResults] = useState<Artist[]>([]);
   const [selectedArtists, setSelectedArtists] = useState<SelectedArtist[]>([]);
+  const restoredFromStorage = useRef(false);
   const [initDone, setInitDone] = useState(false);
   const [loading, setLoading] = useState(false);
   const [tracks, setTracks] = useState<CollabTracks[]>([]);
@@ -109,29 +110,41 @@ export default function App() {
 
   useEffect(() => {
     if (!containerRef.current) return;
-
     visuRef.current = initVisu(containerRef.current);
     visuRef.current?.network.on("click", handleClick);
     visuRef.current?.network.on("doubleClick", handleDoubleClick);
 
-    if (initDone) return;
+    if (restoredFromStorage.current || initDone) return;
+
+    setInitDone(true);
 
     async function restoreFromLocalStorage() {
       const selectedArtists: SelectedArtist[] = JSON.parse(localStorage.getItem("selectedArtists") || "[]");
       setSelectedArtists(selectedArtists);
-      await Promise.all(selectedArtists.map(artist => addArtistCollabs(artist.gid)));
+      for (const artist of selectedArtists) {
+        await addArtistCollabs(artist.gid);
+      }
       setTimeout(() => {
-        visuRef.current?.network.fit();
-        setInitDone(true);
+        if (!visuRef.current) return;
+        visuRef.current.network.fit();
+        const position = visuRef.current.network.getViewPosition();
+        const sidebarWith = 200;
+        visuRef.current.network.moveTo({ position: { x: position.x - sidebarWith, y: position.y } });
       }, 500);
     }
-    restoreFromLocalStorage();
+
+    // Only call restoreFromLocalStorage if it hasn't been called before
+    if (!restoredFromStorage.current) {
+      restoreFromLocalStorage();
+      restoredFromStorage.current = true;
+    }
 
     return () => {
       visuRef.current?.network.off("click");
       visuRef.current?.network.off("doubleClick");
     };
   }, [initDone]);
+
 
   const handleSearchSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -213,7 +226,6 @@ export default function App() {
     if (!visuRef.current) return;
     const { edges } = visuRef.current;
     const artist = visu?.nodes.get(params.nodes[0]);
-
     if (params.nodes.length === 0 && params.edges.length === 0) {
       setTracks([]);
       return;
@@ -282,7 +294,7 @@ export default function App() {
 
 
   return (
-    <div style={{ display: "flex", height: "100vh" }}>
+    <div style={{ width: "100%", height: "100%" }}>
       <div className="sidebar" style={{ left: 0 }}>
         <form id="search-form" onSubmit={handleSearchSubmit}>
           <input
@@ -326,7 +338,7 @@ export default function App() {
         )}
       </div>
 
-      <div ref={containerRef}></div>
+      <div ref={containerRef} style={{ height: "100%" }}></div>
 
       <div className="sidebar" style={{ right: 0, display: tracks.length > 0 ? "flex" : "none" }}>
         <div className="track-list">

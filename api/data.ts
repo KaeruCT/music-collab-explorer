@@ -19,26 +19,27 @@ export interface ArtistCollab {
 }
 
 export async function searchArtists(client: PoolClient, query: string): Promise<Artist[]> {
+  const search = query.toLowerCase().replace(/\s+/g, " ").replaceAll(",", "");
   const result = await client.queryObject<Artist>(
     `
     WITH filtered_artist AS (
         SELECT id, gid, name, comment, last_updated
         FROM artist
-        WHERE LOWER(name) LIKE '%' || LOWER($1) || '%'
+        WHERE LOWER(name) LIKE '%' || $1 || '%'
     ),
     filtered_acn AS (
         SELECT artist, STRING_AGG(name, ', ') AS credit_names
         FROM artist_credit_name
-        WHERE LOWER(name) LIKE '%' || LOWER($1) || '%'
+        WHERE LOWER(name) LIKE '%' || $1 || '%'
         GROUP BY artist
     )
     SELECT *
     FROM (
         SELECT a.id, a.gid, a.name, a.comment, a.last_updated,
             CASE 
-                WHEN LOWER(a.name) = LOWER($1) THEN 1
-                WHEN acn.credit_names IS NOT NULL AND LOWER(acn.credit_names) LIKE '%' || LOWER($1) || '%' THEN 2
-                WHEN LOWER(a.name) LIKE '%' || LOWER($1) || '%' THEN 3
+                WHEN LOWER(a.name) = $1 THEN 1
+                WHEN acn.credit_names IS NOT NULL AND LOWER(acn.credit_names) LIKE '%' || $1 || '%' THEN 2
+                WHEN LOWER(a.name) LIKE '%' || $1 || '%' THEN 3
                 ELSE 4
             END AS relevance
         FROM filtered_artist a
@@ -48,7 +49,7 @@ export async function searchArtists(client: PoolClient, query: string): Promise<
     ORDER BY relevance, LENGTH(name) ASC, last_updated DESC
     LIMIT 100;
     `,
-    [query]
+    [search]
   );
 
   return result.rows;
@@ -79,9 +80,8 @@ export async function getArtist(client: PoolClient, artistGid: string): Promise<
 
 export async function getCollabs(client: PoolClient, gid: string): Promise<ArtistCollab[]> {
   const q = `
-    SELECT artist_id, artist_gid, artist_name, artist_comment, track_id, track_gid, track_name
-    FROM (
-      SELECT 
+    WITH track_collaborations AS (
+    SELECT 
         a2.id AS artist_id,
         a2.gid AS artist_gid,
         a2.name AS artist_name,
@@ -89,19 +89,51 @@ export async function getCollabs(client: PoolClient, gid: string): Promise<Artis
         t.id AS track_id,
         t.gid AS track_gid,
         t.name AS track_name,
-        ROW_NUMBER() OVER (PARTITION BY t.name ORDER BY t.id) AS row_num
-      FROM artist a
-      RIGHT JOIN artist_credit_name acn ON acn.artist = a.id
-      RIGHT JOIN artist_credit ac ON acn.artist_credit = ac.id
-      RIGHT JOIN artist_credit_name acn2 ON acn2.artist_credit = ac.id AND acn2.artist <> a.id
-      RIGHT JOIN artist a2 ON a2.id = acn2.artist
-      RIGHT JOIN track t ON t.artist_credit = ac.id
-      WHERE
+        COUNT(DISTINCT acn2.artist) AS collaborator_count
+    FROM 
+        artist a
+    RIGHT JOIN 
+        artist_credit_name acn ON acn.artist = a.id
+    RIGHT JOIN 
+        artist_credit ac ON acn.artist_credit = ac.id
+    RIGHT JOIN 
+        artist_credit_name acn2 ON acn2.artist_credit = ac.id AND acn2.artist <> a.id
+    RIGHT JOIN 
+        artist a2 ON a2.id = acn2.artist
+    RIGHT JOIN 
+        track t ON t.artist_credit = ac.id
+    WHERE 
         a.gid = $1::uuid
-        AND LENGTH(t.name) <= 50 -- there are some weird songs with long-ass names
-      GROUP BY a2.id, a2.name, t.id, t.name
-    ) AS unique_tracks
-    WHERE row_num = 1;
+        AND LENGTH(t.name) <= 50
+    GROUP BY 
+        a2.id, a2.gid, a2.name, a2.comment, t.id, t.gid, t.name
+      )
+    SELECT 
+        artist_id, 
+        artist_gid, 
+        artist_name, 
+        artist_comment, 
+        track_id, 
+        track_gid, 
+        track_name
+    FROM 
+        (
+            SELECT 
+                artist_id, 
+                artist_gid, 
+                artist_name, 
+                artist_comment, 
+                track_id, 
+                track_gid, 
+                track_name,
+                ROW_NUMBER() OVER (PARTITION BY artist_gid, track_name ORDER BY collaborator_count DESC) AS row_num
+            FROM 
+                track_collaborations
+        ) AS ranked_tracks
+    WHERE 
+        row_num = 1
+    ORDER BY 
+        track_name, artist_name;
     `;
 
   type ArtistResult = {
