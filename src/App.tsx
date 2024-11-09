@@ -1,5 +1,5 @@
 import { DataSet, Network } from "vis-network/standalone";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { generateColor } from "./colors.ts";
 import { fetchArtistImage } from "./img.ts";
 import { TrackInfo } from "./TrackInfo.tsx";
@@ -98,53 +98,10 @@ export default function App() {
   const [tracks, setTracks] = useState<CollabTracks[]>([]);
   const [searching, setSearching] = useState<boolean | undefined>(undefined);
 
-  const selectedArtistIds = new Set(selectedArtists.map(artist => artist.gid));
+  const selectedArtistIds = useMemo(() => new Set(selectedArtists.map(artist => artist.gid)), [selectedArtists]);
 
   const containerRef = useRef<HTMLDivElement | null>(null);
   const visuRef = useRef<Visu | null>(null);
-
-  useEffect(() => {
-    if (!initDone) return;
-    localStorage.setItem("selectedArtists", JSON.stringify(selectedArtists));
-  }, [initDone, selectedArtists, selectedArtists.length]);
-
-  useEffect(() => {
-    if (!containerRef.current) return;
-    visuRef.current = initVisu(containerRef.current);
-    visuRef.current?.network.on("click", handleClick);
-    visuRef.current?.network.on("doubleClick", handleDoubleClick);
-
-    if (restoredFromStorage.current || initDone) return;
-
-    setInitDone(true);
-
-    async function restoreFromLocalStorage() {
-      const selectedArtists: SelectedArtist[] = JSON.parse(localStorage.getItem("selectedArtists") || "[]");
-      setSelectedArtists(selectedArtists);
-      for (const artist of selectedArtists) {
-        await addArtistCollabs(artist.gid);
-      }
-      setTimeout(() => {
-        if (!visuRef.current) return;
-        visuRef.current.network.fit();
-        const position = visuRef.current.network.getViewPosition();
-        const sidebarWith = 200;
-        visuRef.current.network.moveTo({ position: { x: position.x - sidebarWith, y: position.y } });
-      }, 500);
-    }
-
-    // Only call restoreFromLocalStorage if it hasn't been called before
-    if (!restoredFromStorage.current) {
-      restoreFromLocalStorage();
-      restoredFromStorage.current = true;
-    }
-
-    return () => {
-      visuRef.current?.network.off("click");
-      visuRef.current?.network.off("doubleClick");
-    };
-  }, [initDone]);
-
 
   const handleSearchSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -166,11 +123,11 @@ export default function App() {
     }
   };
 
-  const handleSelectArtist = async (artist: Pick<Artist, "gid" | "name">) => {
+  const handleSelectArtist = useCallback(async (artist: Pick<Artist, "gid" | "name">) => {
     if (selectedArtistIds.has(artist.gid)) return;
     setSelectedArtists((prev) => [...prev, artist]);
     await addArtistCollabs(artist.gid);
-  };
+  }, [setSelectedArtists, selectedArtistIds]);
 
   const addArtistCollabs = async (gid: string) => {
     if (!visuRef.current) return;
@@ -210,7 +167,7 @@ export default function App() {
     }
   };
 
-  const handleDoubleClick = (params: { nodes: string[] }) => {
+  const handleDoubleClick = useCallback((params: { nodes: string[] }) => {
     if (params.nodes.length === 1) {
       const artistNode: Node | undefined | null = visuRef.current?.nodes.get(params.nodes[0]);
       if (artistNode) {
@@ -220,7 +177,7 @@ export default function App() {
         });
       }
     }
-  };
+  }, [handleSelectArtist]);
 
   const handleClick = (params: { nodes: string[], edges: string[] }) => {
     if (!visuRef.current) return;
@@ -292,6 +249,48 @@ export default function App() {
     }
   };
 
+
+  useEffect(() => {
+    if (!initDone) return;
+    localStorage.setItem("selectedArtists", JSON.stringify(selectedArtists));
+  }, [initDone, selectedArtists, selectedArtists.length]);
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+    visuRef.current = initVisu(containerRef.current);
+    visuRef.current?.network.on("click", handleClick);
+    visuRef.current?.network.on("doubleClick", handleDoubleClick);
+
+    if (restoredFromStorage.current || initDone) return;
+
+    setInitDone(true);
+
+    async function restoreFromLocalStorage() {
+      const selectedArtists: SelectedArtist[] = JSON.parse(localStorage.getItem("selectedArtists") || "[]");
+      setSelectedArtists(selectedArtists);
+      for (const artist of selectedArtists) {
+        await addArtistCollabs(artist.gid);
+      }
+      setTimeout(() => {
+        if (!visuRef.current) return;
+        visuRef.current.network.fit();
+        const position = visuRef.current.network.getViewPosition();
+        const sidebarWith = 200;
+        visuRef.current.network.moveTo({ position: { x: position.x - sidebarWith, y: position.y } });
+      }, 500);
+    }
+
+    // Only call restoreFromLocalStorage if it hasn't been called before
+    if (!restoredFromStorage.current) {
+      restoreFromLocalStorage();
+      restoredFromStorage.current = true;
+    }
+
+    return () => {
+      visuRef.current?.network.off("click");
+      visuRef.current?.network.off("doubleClick");
+    };
+  }, [initDone, selectedArtists, handleDoubleClick]);
 
   return (
     <div style={{ width: "100%", height: "100%" }}>
