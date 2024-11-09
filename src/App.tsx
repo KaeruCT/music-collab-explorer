@@ -124,10 +124,12 @@ export default function App() {
   };
 
   const handleSelectArtist = useCallback(async (artist: Pick<Artist, "gid" | "name">) => {
-    if (selectedArtistIds.has(artist.gid)) return;
-    setSelectedArtists((prev) => [...prev, artist]);
+    setSelectedArtists((prevSelectedArtists) => {
+      if (prevSelectedArtists.some((a) => a.gid === artist.gid)) return prevSelectedArtists;
+      return [...prevSelectedArtists, artist];
+    });
     await addArtistCollabs(artist.gid);
-  }, [setSelectedArtists, selectedArtistIds]);
+  }, []);
 
   const addArtistCollabs = async (gid: string) => {
     if (!visuRef.current) return;
