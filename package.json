@@ -8,7 +8,7 @@
     "dev:api": "deno run --allow-write --allow-env --allow-net --allow-read --watch api/main.ts",
     "dev:vite": "deno run -A npm:vite",
     "build": "tsc -b && vite build",
-    "lint": "eslint .",
+    "lint": "eslint api src",
     "preview": "vite preview",
     "start": "deno run --allow-write --allow-env --allow-net --allow-read api/main.ts"
   },
