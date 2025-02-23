@@ -1,5 +1,5 @@
 {
-  "name": "music-graph-2",
+  "name": "music-collab-explorer",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -10,7 +10,7 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "start": "deno run --cert eu-central-1-bundle.pem --allow-write --allow-env --allow-net --allow-read api/main.ts"
+    "start": "deno run --allow-write --allow-env --allow-net --allow-read api/main.ts"
   },
   "dependencies": {
     "react": "^18.3.1",

@@ -1,3 +1,5 @@
+import React from "react";
+
 interface TrackInfoProps {
   title: string;
   artistA: string;

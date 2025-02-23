@@ -1,3 +1,6 @@
+// This module implements a naive cache system that stores JSON data in the system's temporary directory.
+// If this was meant for production, replace with redis or at least make sure it's on a ramdisk
+
 import { join } from "node:path";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 const CACHE_DIR = join(Deno.env.get("TMPDIR") || "/tmp", "app_cache");

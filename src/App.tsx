@@ -5,7 +5,7 @@ import { fetchArtistImage } from "./img.ts";
 import { TrackInfo } from "./TrackInfo.tsx";
 import Sticky from "./Sticky.tsx";
 
-// TODO: share types? vite will compile files even if i only import types
+// TODO: share types? vite will compile files even if only types are imported
 interface Artist {
   id: number;
   gid: string;
