@@ -4,5 +4,6 @@
     "@std/dotenv": "jsr:@std/dotenv@^0.225.2",
     "@tajpouria/cors": "jsr:@tajpouria/cors@^1.2.1",
     "postgres": "https://deno.land/x/postgres@v0.19.3/mod.ts"
-  }
+  },
+  "nodeModulesDir": "auto"
 }
