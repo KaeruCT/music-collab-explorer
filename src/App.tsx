@@ -92,6 +92,7 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [searchResults, setSearchResults] = useState<Artist[]>([]);
   const [selectedArtists, setSelectedArtists] = useState<SelectedArtist[]>([]);
+  const [showOnlySelected, setShowOnlySelected] = useState<boolean>(false);
   const restoredFromStorage = useRef(false);
   const [initDone, setInitDone] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -103,6 +104,49 @@ export default function App() {
 
   const containerRef = useRef<HTMLDivElement | null>(null);
   const visuRef = useRef<Visu | null>(null);
+
+  const addArtistCollabs = async (gid: string, selectedArtistIds: Set<string>, showOnlySelected: boolean) => {
+    if (!visuRef.current) return;
+    const { nodes, edges } = visuRef.current;
+    setLoading(true);
+    try {
+      const response = await get(`/api/artists/${gid}/collabs`);
+      const data: ArtistCollabsResult = await response.json();
+      const nodesToAdd = data.nodes.filter(node => !nodes.get(node.id)).map(node => {
+        const hidden = showOnlySelected && !selectedArtistIds.has(node.id as string);
+        return {
+          ...node,
+          color: generateColor(String(node.id)),
+          physics: !hidden,
+          hidden,
+        };
+      });
+      nodes.add(nodesToAdd);
+
+      nodesToAdd.forEach((node) => {
+        fetchArtistImage(node.label).then((imageUrl) => {
+          if (imageUrl) {
+            nodes.update({
+              id: node.id,
+              shape: "circularImage",
+              image: imageUrl
+            });
+          }
+        });
+      });
+
+      const edgesToAdd = data.edges.filter(
+        edge => edges.get({
+          filter: item => item.from === edge.from && item.to === edge.to
+        }).length === 0
+      );
+      edges.add(edgesToAdd as EdgeWithId[]);
+    } catch (error) {
+      console.error("Error fetching collaboration data:", error);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   const handleClearSearch = () => {
     setSearchQuery("");
@@ -148,46 +192,8 @@ export default function App() {
       if (prevSelectedArtists.some((a) => a.gid === artist.gid)) return prevSelectedArtists;
       return [...prevSelectedArtists, artist];
     });
-    await addArtistCollabs(artist.gid);
-  }, []);
-
-  const addArtistCollabs = async (gid: string) => {
-    if (!visuRef.current) return;
-    const { nodes, edges } = visuRef.current;
-    setLoading(true);
-    try {
-      const response = await get(`/api/artists/${gid}/collabs`);
-      const data: ArtistCollabsResult = await response.json();
-      const nodesToAdd = data.nodes.filter(node => !nodes.get(node.id)).map(node => ({
-        ...node,
-        color: generateColor(String(node.id))
-      }));
-      nodes.add(nodesToAdd);
-
-      nodesToAdd.forEach((node) => {
-        fetchArtistImage(node.label).then((imageUrl) => {
-          if (imageUrl) {
-            nodes.update({
-              id: node.id,
-              shape: "circularImage",
-              image: imageUrl
-            });
-          }
-        });
-      });
-
-      const edgesToAdd = data.edges.filter(
-        edge => edges.get({
-          filter: item => item.from === edge.from && item.to === edge.to
-        }).length === 0
-      );
-      edges.add(edgesToAdd as EdgeWithId[]);
-    } catch (error) {
-      console.error("Error fetching collaboration data:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    await addArtistCollabs(artist.gid, selectedArtistIds, showOnlySelected);
+  }, [selectedArtistIds, showOnlySelected]);
 
   const handleDoubleClick = useCallback((params: { nodes: string[] }) => {
     if (params.nodes.length === 1) {
@@ -201,7 +207,7 @@ export default function App() {
     }
   }, [handleSelectArtist]);
 
-  const handleClick = (params: { nodes: string[], edges: string[] }) => {
+  const handleClick = useCallback((params: { nodes: string[], edges: string[] }) => {
     if (!visuRef.current) return;
     const { edges } = visuRef.current;
     const artist = visu?.nodes.get(params.nodes[0]);
@@ -215,6 +221,12 @@ export default function App() {
       if (!edge) {
         return;
       }
+
+      const hidden = showOnlySelected && !(selectedArtistIds.has(edge.from) && selectedArtistIds.has(edge.to));
+      if (hidden) {
+        return;
+      }
+
       const artist1 = visu?.nodes.get(edge.from);
       const artist2 = visu?.nodes.get(edge.to);
       let artistA: Node | null | undefined;
@@ -237,7 +249,7 @@ export default function App() {
     if (groupedTracks) {
       setTracks(groupedTracks as CollabTracks[]);
     }
-  };
+  }, [selectedArtistIds, showOnlySelected]);
 
   const scrollToArtist = (artistId: string | number) => {
     const node = visuRef.current?.nodes.get(artistId);
@@ -271,11 +283,25 @@ export default function App() {
     }
   };
 
-
   useEffect(() => {
     if (!initDone) return;
     localStorage.setItem("selectedArtists", JSON.stringify(selectedArtists));
   }, [initDone, selectedArtists, selectedArtists.length]);
+
+  useEffect(() => {
+    if (!visuRef.current) return;
+    const { nodes } = visuRef.current;
+    localStorage.setItem("showOnlySelected", JSON.stringify(showOnlySelected));
+
+    for (const node of nodes.get()) {
+      const hidden = showOnlySelected && !selectedArtistIds.has(node.id);
+      nodes.update({
+        id: node.id,
+        physics: !hidden,
+        hidden,
+      });
+    }
+  }, [showOnlySelected, selectedArtistIds]);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -288,10 +314,13 @@ export default function App() {
     setInitDone(true);
 
     async function restoreFromLocalStorage() {
+      const showOnlySelected = JSON.parse(localStorage.getItem("showOnlySelected") || "false");
+      setShowOnlySelected(showOnlySelected);
+
       const selectedArtists: SelectedArtist[] = JSON.parse(localStorage.getItem("selectedArtists") || "[]");
       setSelectedArtists(selectedArtists);
       for (const artist of selectedArtists) {
-        await addArtistCollabs(artist.gid);
+        await addArtistCollabs(artist.gid, new Set(selectedArtists.map(artist => artist.gid)), showOnlySelected);
       }
       setTimeout(() => {
         if (!visuRef.current) return;
@@ -312,7 +341,7 @@ export default function App() {
       visuRef.current?.network.off("click");
       visuRef.current?.network.off("doubleClick");
     };
-  }, [initDone, selectedArtists, handleDoubleClick]);
+  }, [initDone, handleDoubleClick, handleClick]);
 
   return (
     <div style={{ width: "100%", height: "100%" }}>
@@ -325,7 +354,7 @@ export default function App() {
             onChange={(e) => setSearchQuery(e.target.value)}
             autoFocus
           />
-          {searchQuery && (
+          {(searchQuery || searchResults.length > 0) && (
             <button
               className="clear-search"
               type="button"
@@ -356,6 +385,16 @@ export default function App() {
 
         {selectedArtists.length > 0 && (
           <div className="artist-list">
+            <div>
+              <label style={{ width: "100%", marginLeft: "-4px" }}>
+                <input
+                  type="checkbox"
+                  checked={showOnlySelected}
+                  onChange={(e) => setShowOnlySelected(e.target.checked)}
+                />
+                &nbsp;Show only selected
+              </label>
+            </div>
             {selectedArtists.map((artist) => (
               <div key={artist.gid} style={{ display: "flex", alignItems: "center", cursor: "pointer" }} onClick={() => scrollToArtist(artist.gid)}>
                 <div className="artist-icon" style={{ backgroundColor: generateColor(artist.gid) }}></div>
