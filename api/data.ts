@@ -17,39 +17,42 @@ export interface ArtistCollab {
   artist: Artist;
   track: Track;
 }
-
 export async function searchArtists(client: PoolClient, query: string): Promise<Artist[]> {
-  const search = query.toLowerCase().replace(/\s+/g, " ");
   const result = await client.queryObject<Artist>(
     `
     WITH filtered_artist AS (
-        SELECT id, gid, name, comment, last_updated
+        SELECT id, gid, name, comment, last_updated,
+               similarity(unaccent(LOWER(name)), unaccent($1)) AS similarity_score
         FROM artist
-        WHERE LOWER(name) LIKE '%' || $1 || '%'
+        WHERE unaccent(LOWER(name)) % unaccent($1) -- Trigram fuzzy match
+           OR LOWER(name) ILIKE '%' || $1 || '%'
     ),
     filtered_acn AS (
         SELECT artist, STRING_AGG(name, ', ') AS credit_names
         FROM artist_credit_name
-        WHERE LOWER(name) LIKE '%' || $1 || '%'
+        WHERE unaccent(LOWER(name)) % unaccent($1)
+           OR LOWER(name) ILIKE '%' || $1 || '%'
         GROUP BY artist
     )
     SELECT *
     FROM (
         SELECT a.id, a.gid, a.name, a.comment, a.last_updated,
+            COALESCE(acn.credit_names, '') AS credit_names,
+            a.similarity_score,
             CASE 
-                WHEN LOWER(a.name) = $1 THEN 1
-                WHEN acn.credit_names IS NOT NULL AND LOWER(acn.credit_names) LIKE '%' || $1 || '%' THEN 2
-                WHEN LOWER(a.name) LIKE '%' || $1 || '%' THEN 3
+                WHEN unaccent(LOWER(a.name)) = unaccent($1) THEN 1
+                WHEN acn.credit_names IS NOT NULL AND unaccent(LOWER(acn.credit_names)) % unaccent($1) THEN 2
+                WHEN unaccent(LOWER(a.name)) % unaccent($1) THEN 3
                 ELSE 4
             END AS relevance
         FROM filtered_artist a
         LEFT JOIN filtered_acn acn ON acn.artist = a.id
-        GROUP BY a.id, a.gid, a.name, a.comment, a.last_updated, relevance
+        GROUP BY a.id, a.gid, a.name, a.comment, a.last_updated, a.similarity_score, acn.credit_names
     ) AS grouped_artists
-    ORDER BY relevance, LENGTH(name) ASC, last_updated DESC
+    ORDER BY relevance, similarity_score DESC, LENGTH(name) ASC, last_updated DESC
     LIMIT 100;
     `,
-    [search]
+    [query]
   );
 
   return result.rows;
