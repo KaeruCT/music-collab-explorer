@@ -38,8 +38,8 @@ type ArtistCollabsResult = {
 
 type EdgeWithId = Edge & { id: string };
 
-function get(path: string) {
-  return fetch(`${path}`);
+function get(path: string, init: RequestInit = {}) {
+  return fetch(`${path}`, init);
 }
 
 type Visu = {
@@ -97,11 +97,21 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [tracks, setTracks] = useState<CollabTracks[]>([]);
   const [searching, setSearching] = useState<boolean | undefined>(undefined);
+  const searchAbortController = useRef<AbortController | null>(null);
 
   const selectedArtistIds = useMemo(() => new Set(selectedArtists.map(artist => artist.gid)), [selectedArtists]);
 
   const containerRef = useRef<HTMLDivElement | null>(null);
   const visuRef = useRef<Visu | null>(null);
+
+  const handleClearSearch = () => {
+    setSearchQuery("");
+    setSearchResults([]);
+    setSearching(undefined);
+    if (searchAbortController.current) {
+      searchAbortController.current.abort();
+    }
+  };
 
   const handleSearchSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -111,15 +121,25 @@ export default function App() {
       return;
     }
 
+    if (searchAbortController.current) {
+      searchAbortController.current.abort();
+    }
+    searchAbortController.current = new AbortController();
+    const { signal } = searchAbortController.current;
+
     setSearching(true);
     try {
-      const response = await get(`/api/artists?q=${encodeURIComponent(searchQuery)}`);
+      const response = await get(`/api/artists?q=${encodeURIComponent(searchQuery)}`, { signal });
       const artists: Artist[] = await response.json();
       setSearchResults(artists);
     } catch (error) {
-      console.error("Error fetching search results:", error);
+      if (error instanceof Error && error.name !== "AbortError") {
+        console.error("Error fetching search results:", error);
+      }
     } finally {
-      setSearching(false);
+      if (!signal.aborted) {
+        setSearching(false);
+      }
     }
   };
 
@@ -297,7 +317,7 @@ export default function App() {
   return (
     <div style={{ width: "100%", height: "100%" }}>
       <div className="sidebar" style={{ left: 0 }}>
-        <form id="search-form" onSubmit={handleSearchSubmit}>
+        <form className="search-form" id="search-form" onSubmit={handleSearchSubmit}>
           <input
             type="search"
             placeholder="Search for artist"
@@ -305,9 +325,17 @@ export default function App() {
             onChange={(e) => setSearchQuery(e.target.value)}
             autoFocus
           />
+          {searchQuery && (
+            <button
+              className="clear-search"
+              type="button"
+              onClick={handleClearSearch}
+            >
+              ✕
+            </button>
+          )}
           <button type="submit">Search</button>
         </form>
-
 
         <div className="search-results">
           {searching === true && <div>Searching...</div>}
