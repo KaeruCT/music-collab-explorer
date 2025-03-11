@@ -2,7 +2,7 @@ FROM denoland/deno:2.0.3 AS frontend
 
 WORKDIR /app
 
-COPY index.html package.json tsconfig.app.json vite.config.* ./
+COPY index.html tsconfig.app.json vite.config.* ./
 COPY src ./src
 
 RUN deno run -A npm:vite build
@@ -11,7 +11,7 @@ FROM denoland/deno:2.0.3 AS backend
 
 WORKDIR /app
 
-COPY deno.json deno.lock package.json ./
+COPY deno.json deno.lock ./
 
 COPY api ./api
 RUN deno cache --lock=deno.lock api/main.ts
