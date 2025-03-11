@@ -1,9 +1,47 @@
 {
+  "tasks": {
+    "dev": "deno task dev:api & deno task dev:vite",
+    "dev:api": "deno run --allow-write --allow-env --allow-net --allow-read --watch api/main.ts",
+    "dev:vite": "deno run -A npm:vite",
+    "build": "tsc -b && vite build",
+    "lint": "eslint api src",
+    "preview": "vite preview",
+    "start": "deno run --allow-write --allow-env --allow-net --allow-read api/main.ts"
+  },
   "imports": {
     "@oak/oak": "jsr:@oak/oak@^17.1.2",
     "@std/dotenv": "jsr:@std/dotenv@^0.225.2",
+    "@std/assert": "jsr:@std/assert@1",
     "@tajpouria/cors": "jsr:@tajpouria/cors@^1.2.1",
-    "postgres": "https://deno.land/x/postgres@v0.19.3/mod.ts"
+    "postgres": "https://deno.land/x/postgres@v0.19.3/mod.ts",
+    "react": "npm:react@^18.3.1",
+    "react-dom": "npm:react-dom@^18.3.1",
+    "vis-network": "npm:vis-network@^9.1.9",
+    "@eslint/js": "npm:@eslint/js@^9.13.0",
+    "@types/react": "npm:@types/react@^18.3.11",
+    "@types/react-dom": "npm:@types/react-dom@^18.3.1",
+    "@vitejs/plugin-react": "npm:@vitejs/plugin-react@^4.3.3",
+    "eslint": "npm:eslint@^9.13.0",
+    "eslint-plugin-react-hooks": "npm:eslint-plugin-react-hooks@^5.0.0",
+    "eslint-plugin-react-refresh": "npm:eslint-plugin-react-refresh@^0.4.13",
+    "globals": "npm:globals@^15.11.0",
+    "typescript": "npm:typescript@~5.6.2",
+    "typescript-eslint": "npm:typescript-eslint@^8.10.0",
+    "vite": "npm:vite@^5.4.9"
+  },
+  "compilerOptions": {
+    "types": [
+      "react",
+      "react-dom",
+      "@types/react"
+    ],
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "deno.ns"
+    ],
+    "jsx": "react-jsx",
+    "jsxImportSource": "react"
   },
   "nodeModulesDir": "auto"
 }

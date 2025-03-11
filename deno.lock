@@ -12,6 +12,7 @@
     "jsr:@std/encoding@1": "1.0.5",
     "jsr:@std/encoding@^1.0.5": "1.0.5",
     "jsr:@std/http@1": "1.0.7",
+    "jsr:@std/internal@^1.0.4": "1.0.5",
     "jsr:@std/io@0.224": "0.224.9",
     "jsr:@std/media-types@1": "1.0.3",
     "jsr:@std/path@1": "1.0.6",
@@ -61,7 +62,10 @@
       ]
     },
     "@std/assert@1.0.6": {
-      "integrity": "1904c05806a25d94fe791d6d883b685c9e2dcd60e4f9fc30f4fc5cf010c72207"
+      "integrity": "1904c05806a25d94fe791d6d883b685c9e2dcd60e4f9fc30f4fc5cf010c72207",
+      "dependencies": [
+        "jsr:@std/internal"
+      ]
     },
     "@std/bytes@1.0.2": {
       "integrity": "fbdee322bbd8c599a6af186a1603b3355e59a5fb1baa139f8f4c3c9a1b3e3d57"
@@ -80,6 +84,9 @@
       "dependencies": [
         "jsr:@std/encoding@^1.0.5"
       ]
+    },
+    "@std/internal@1.0.5": {
+      "integrity": "54a546004f769c1ac9e025abd15a76b6671ddc9687e2313b67376125650dc7ba"
     },
     "@std/io@0.224.9": {
       "integrity": "4414664b6926f665102e73c969cfda06d2c4c59bd5d0c603fd4f1b1c840d6ee3",
@@ -1474,26 +1481,23 @@
   "workspace": {
     "dependencies": [
       "jsr:@oak/oak@^17.1.2",
+      "jsr:@std/assert@1",
       "jsr:@std/dotenv@~0.225.2",
-      "jsr:@tajpouria/cors@^1.2.1"
-    ],
-    "packageJson": {
-      "dependencies": [
-        "npm:@eslint/js@^9.13.0",
-        "npm:@types/react-dom@^18.3.1",
-        "npm:@types/react@^18.3.11",
-        "npm:@vitejs/plugin-react@^4.3.3",
-        "npm:eslint-plugin-react-hooks@5",
-        "npm:eslint-plugin-react-refresh@~0.4.13",
-        "npm:eslint@^9.13.0",
-        "npm:globals@^15.11.0",
-        "npm:react-dom@^18.3.1",
-        "npm:react@^18.3.1",
-        "npm:typescript-eslint@^8.10.0",
-        "npm:typescript@~5.6.2",
-        "npm:vis-network@^9.1.9",
-        "npm:vite@^5.4.9"
-      ]
-    }
+      "jsr:@tajpouria/cors@^1.2.1",
+      "npm:@eslint/js@^9.13.0",
+      "npm:@types/react-dom@^18.3.1",
+      "npm:@types/react@^18.3.11",
+      "npm:@vitejs/plugin-react@^4.3.3",
+      "npm:eslint-plugin-react-hooks@5",
+      "npm:eslint-plugin-react-refresh@~0.4.13",
+      "npm:eslint@^9.13.0",
+      "npm:globals@^15.11.0",
+      "npm:react-dom@^18.3.1",
+      "npm:react@^18.3.1",
+      "npm:typescript-eslint@^8.10.0",
+      "npm:typescript@~5.6.2",
+      "npm:vis-network@^9.1.9",
+      "npm:vite@^5.4.9"
+    ]
   }
 }

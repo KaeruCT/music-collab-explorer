@@ -1,5 +1,5 @@
 import { DataSet, Network } from "vis-network/standalone";
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { generateColor } from "./colors.ts";
 import { fetchArtistImage } from "./img.ts";
 import { TrackInfo } from "./TrackInfo.tsx";
@@ -137,7 +137,7 @@ export default function App() {
 
       const edgesToAdd = data.edges.filter(
         edge => edges.get({
-          filter: item => item.from === edge.from && item.to === edge.to
+          filter: (item: EdgeWithId) => item.from === edge.from && item.to === edge.to
         }).length === 0
       );
       edges.add(edgesToAdd as EdgeWithId[]);
@@ -189,7 +189,7 @@ export default function App() {
 
   const handleSelectArtist = useCallback(async (artist: Pick<Artist, "gid" | "name">) => {
     setSelectedArtists((prevSelectedArtists) => {
-      if (prevSelectedArtists.some((a) => a.gid === artist.gid)) return prevSelectedArtists;
+      if (prevSelectedArtists.some((a: SelectedArtist) => a.gid === artist.gid)) return prevSelectedArtists;
       return [...prevSelectedArtists, artist];
     });
     await addArtistCollabs(artist.gid, selectedArtistIds, showOnlySelected);
@@ -227,8 +227,8 @@ export default function App() {
         return;
       }
 
-      const artist1 = visu?.nodes.get(edge.from);
-      const artist2 = visu?.nodes.get(edge.to);
+      const artist1 = visu?.nodes.get(edge.from) as Node | undefined;
+      const artist2 = visu?.nodes.get(edge.to) as Node | undefined
       let artistA: Node | null | undefined;
       let artistB: Node | null | undefined;
 
@@ -242,7 +242,7 @@ export default function App() {
       return {
         artistA: artistA?.label ?? "",
         artistB: artistB?.label ?? "",
-        tracks: edge.tracks.map(track => track.name)
+        tracks: edge.tracks.map((track: Track) => track.name)
       };
     }).filter((track): track is CollabTracks => track !== undefined);
 
