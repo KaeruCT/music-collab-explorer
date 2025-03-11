@@ -222,7 +222,7 @@ export default function App() {
         return;
       }
 
-      const hidden = showOnlySelected && !(selectedArtistIds.has(edge.from) && selectedArtistIds.has(edge.to));
+      const hidden = showOnlySelected && !(selectedArtistIds.has(edge.from as string) && selectedArtistIds.has(edge.to as string));
       if (hidden) {
         return;
       }
@@ -294,12 +294,12 @@ export default function App() {
     localStorage.setItem("showOnlySelected", JSON.stringify(showOnlySelected));
 
     for (const node of nodes.get()) {
-      const hidden = showOnlySelected && !selectedArtistIds.has(node.id);
+      const hidden = showOnlySelected && !selectedArtistIds.has(node.id as string);
       nodes.update({
         id: node.id,
         physics: !hidden,
         hidden,
-      });
+      } as any);
     }
   }, [showOnlySelected, selectedArtistIds]);
 
