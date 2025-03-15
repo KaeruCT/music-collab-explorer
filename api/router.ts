@@ -2,7 +2,7 @@ import { Router, RouterContext } from "@oak/oak";
 import { readCache, writeCache } from "./cache.ts";
 import { Artist, getArtist, getCollabs, searchArtists } from "./data.ts";
 import { rateLimit } from "./rateLimit.ts";
-import { getPool } from "./db/client.ts";
+import { getClient } from "./db/client.ts";
 export interface Node {
   id: string | number;
   label: string;
@@ -37,8 +37,7 @@ router.get("/api/artists", async (ctx: ArtistSearchContext) => {
     return;
   }
 
-  const pool = getPool();
-  const client = await pool.connect();
+  const client = await getClient();
   try {
     const artists = await searchArtists(client, query);
     await writeCache(key, artists);
@@ -63,8 +62,7 @@ router.get("/api/artists/:gid/collabs", async (ctx: ArtistCollabsContext) => {
     return;
   }
 
-  const pool = getPool();
-  const client = await pool.connect();
+  const client = await getClient();
   try {
     const startArtist = await getArtist(client, gid);
     const collabs = await getCollabs(client, startArtist.gid);

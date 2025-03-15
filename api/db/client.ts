@@ -34,3 +34,12 @@ export function getPool() {
   }
   return pool;
 };
+
+export function getClient() {
+  try {
+    return getPool().connect();
+  } catch (error) {
+    console.error("Failed to connect to the database");
+    throw error;
+  }
+}
