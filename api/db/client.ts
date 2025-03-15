@@ -16,7 +16,7 @@ console.info(`Enforce TLS: ${enforceTls}`);
 
 let pool: Pool;
 
-export default function getPool() {
+export function getPool() {
   if (!pool) {
     try {
       pool = new Pool({

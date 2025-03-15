@@ -18,6 +18,7 @@ RUN apt-get update && apt-get install -y wget curl && rm -rf /var/lib/apt/lists/
 COPY deno.json deno.lock ./
 
 COPY api ./api
+COPY --from=frontend /app/dist ./dist
 RUN deno cache --lock=deno.lock api/main.ts
 
 RUN addgroup --system appgroup && adduser --system --ingroup appgroup appuser

@@ -10,13 +10,13 @@ const app = new Application();
 app.use(oakCors());
 app.use(router.routes());
 app.use(router.allowedMethods());
-app.use(routeStaticFilesFrom([
-  `${Deno.cwd()}/dist`,
-  `${Deno.cwd()}/public`,
-]));
+
+const staticPath = `${Deno.cwd()}/dist`;
+app.use(routeStaticFilesFrom([staticPath]));
 
 const hostname = Deno.env.get("HOSTNAME") || "0.0.0.0";
 const port = Deno.env.get("PORT") || "8000";
 
 console.log(`Server running on http://${hostname}:${port}`);
+console.log(`Static files served from ${staticPath}`);
 await app.listen({ port: Number(port), hostname });

@@ -1,9 +1,8 @@
 import { Router, RouterContext } from "@oak/oak";
 import { readCache, writeCache } from "./cache.ts";
 import { Artist, getArtist, getCollabs, searchArtists } from "./data.ts";
-import pool from "./db/client.ts";
 import { rateLimit } from "./rateLimit.ts";
-import getPool from "./db/client.ts";
+import { getPool } from "./db/client.ts";
 export interface Node {
   id: string | number;
   label: string;

@@ -3,16 +3,16 @@
 
 import { join } from "node:path";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
-const CACHE_DIR = join(Deno.env.get("TMPDIR") || "/tmp", "app_cache");
+const cacheDir = join(Deno.env.get("TMPDIR") || "/tmp", "app_cache");
 
-console.info("CACHE_DIR", CACHE_DIR);
+console.info(`Using cache dir: ${cacheDir}`);
 
 async function ensureCacheDir() {
-  await mkdir(CACHE_DIR, { recursive: true });
+  await mkdir(cacheDir, { recursive: true });
 }
 
 function getCacheFilePath(key: string): string {
-  return join(CACHE_DIR, `${encodeURIComponent(key)}.json`);
+  return join(cacheDir, `${encodeURIComponent(key)}.json`);
 }
 
 export async function readCache<T>(key: string): Promise<T | null> {
