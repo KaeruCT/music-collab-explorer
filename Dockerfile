@@ -11,6 +11,10 @@ FROM denoland/deno:2.0.3 AS backend
 
 WORKDIR /app
 
+# Install curl for healthcheck
+USER root
+RUN apt-get update && apt-get install -y wget curl && rm -rf /var/lib/apt/lists/*
+
 COPY deno.json deno.lock ./
 
 COPY api ./api
