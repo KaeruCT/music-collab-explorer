@@ -21,7 +21,7 @@ echo "MusicBrainz Database dump downloaded"
 
 PGHOST=localhost
 PGUSER=postgres
-PGPORT=5432
+PGPORT=15432
 DBNAME=musicbrainz
 DBUSER=musicbrainz
 DBPASS=musicbrainz
