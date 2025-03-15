@@ -21,6 +21,7 @@
     "npm:@types/node@*": "18.16.19",
     "npm:@types/react-dom@^18.3.1": "18.3.1",
     "npm:@types/react@^18.3.11": "18.3.12",
+    "npm:@vitejs/plugin-react@*": "4.3.3_vite@5.4.10__@types+node@18.16.19_@babel+core@7.26.0_@types+node@18.16.19",
     "npm:@vitejs/plugin-react@^4.3.3": "4.3.3_vite@5.4.10__@types+node@18.16.19_@babel+core@7.26.0_@types+node@18.16.19",
     "npm:eslint-plugin-react-hooks@5": "5.0.0_eslint@9.13.0",
     "npm:eslint-plugin-react-refresh@~0.4.13": "0.4.14_eslint@9.13.0",

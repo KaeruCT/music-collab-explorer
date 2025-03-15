@@ -2,7 +2,7 @@
   "tasks": {
     "dev": "deno task dev:api & deno task dev:vite",
     "dev:api": "deno run --allow-write --allow-env --allow-net --allow-read --watch api/main.ts",
-    "dev:vite": "deno run -A npm:vite",
+    "dev:vite": "deno run -A vite",
     "build": "tsc -b && vite build",
     "lint": "eslint api src",
     "preview": "vite preview",

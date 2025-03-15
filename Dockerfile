@@ -2,10 +2,11 @@ FROM denoland/deno:2.0.3 AS frontend
 
 WORKDIR /app
 
-COPY index.html tsconfig.app.json vite.config.* ./
+COPY deno.json index.html tsconfig.* vite.config.* ./
 COPY src ./src
 
-RUN deno run -A npm:vite build
+RUN deno cache deno.json --lock=deno.lock
+RUN deno task build
 
 FROM denoland/deno:2.0.3 AS backend
 
