@@ -26,6 +26,7 @@ export function getPool() {
         hostname: dbHost,
         port: Number(dbPort),
         tls: { enforce: enforceTls },
+        options: "-c search_path=musicbrainz",
       }, POOL_SIZE);
     } catch (error) {
       console.error("Failed to connect to the database");
