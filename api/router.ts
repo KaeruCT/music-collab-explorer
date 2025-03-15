@@ -3,6 +3,7 @@ import { readCache, writeCache } from "./cache.ts";
 import { Artist, getArtist, getCollabs, searchArtists } from "./data.ts";
 import pool from "./db/client.ts";
 import { rateLimit } from "./rateLimit.ts";
+import getPool from "./db/client.ts";
 export interface Node {
   id: string | number;
   label: string;
@@ -36,6 +37,8 @@ router.get("/api/artists", async (ctx: ArtistSearchContext) => {
     ctx.response.body = cachedData;
     return;
   }
+
+  const pool = getPool();
   const client = await pool.connect();
   try {
     const artists = await searchArtists(client, query);
@@ -61,6 +64,7 @@ router.get("/api/artists/:gid/collabs", async (ctx: ArtistCollabsContext) => {
     return;
   }
 
+  const pool = getPool();
   const client = await pool.connect();
   try {
     const startArtist = await getArtist(client, gid);
