@@ -156,7 +156,8 @@ h1, h2, h3, h4 {
   margin: 8px;
   padding-top: 8px;
 }
-.artist-list > div {
+.artist-list > div, .artist-list > label {
+  display: block;
   padding: 4px 8px;
   border-radius: 4px;
   margin-bottom: 4px;

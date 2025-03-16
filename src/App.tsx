@@ -22,6 +22,7 @@ interface Track {
 interface Node {
   id: string | number;
   label: string;
+  hidden?: boolean;
 }
 
 interface Edge {
@@ -69,16 +70,22 @@ function initVisu(container: HTMLDivElement): Visu {
       smooth: false,
     },
     physics: {
-      forceAtlas2Based: {
-        gravitationalConstant: -26,
-        centralGravity: 0.005,
-        springLength: 230,
-        springConstant: 0.18
+      enabled: true,
+      solver: "forceAtlas2Based", // This solver is good for large networks
+      timestep: 0.35, // Lower timestep for faster settling
+      stabilization: {
+        enabled: true,
+        iterations: 30, // Reduce iterations to make it stabilize much faster
+        updateInterval: 10,
+        fit: true,
       },
-      maxVelocity: 146,
-      solver: "forceAtlas2Based",
-      timestep: 0.35,
-      stabilization: false
+      forceAtlas2Based: {
+        gravitationalConstant: -50, // Stronger attraction to center
+        centralGravity: 0.01, // Reduce central pull (faster settling)
+        springLength: 100, // Shorter spring = tighter clusters
+        springConstant: 0.1, // Lower value = less bouncing
+        damping: 0.8, // Higher damping = nodes stop moving quicker
+      },
     },
     layout: { improvedLayout: false }
   });
@@ -301,13 +308,20 @@ export default function App() {
     const { nodes } = visuRef.current;
     localStorage.setItem("showOnlySelected", JSON.stringify(showOnlySelected));
 
-    for (const node of nodes.get()) {
+    const updates: Node[] = [];
+    nodes.forEach((node) => {
       const hidden = showOnlySelected && !selectedArtistIds.has(node.id as string);
-      nodes.update({
-        id: node.id,
-        physics: !hidden,
-        hidden,
-      } as unknown as Node);
+      if (node.hidden !== hidden) {
+        updates.push({
+          id: node.id,
+          physics: !hidden,
+          hidden,
+        } as unknown as Node);
+      }
+    });
+
+    if (updates.length > 0) {
+      nodes.update(updates);
     }
   }, [showOnlySelected, selectedArtistIds]);
 
@@ -393,16 +407,14 @@ export default function App() {
 
         {selectedArtists.length > 0 && (
           <div className="artist-list">
-            <div>
-              <label style={{ width: "100%", marginLeft: "-4px" }}>
-                <input
-                  type="checkbox"
-                  checked={showOnlySelected}
-                  onChange={(e) => setShowOnlySelected(e.target.checked)}
-                />
-                &nbsp;Show only selected
-              </label>
-            </div>
+            <label>
+              <input
+                type="checkbox"
+                checked={showOnlySelected}
+                onChange={(e) => setShowOnlySelected(e.target.checked)}
+              />
+              &nbsp;Show only selected
+            </label>
             {selectedArtists.map((artist) => (
               <div key={artist.gid} style={{ display: "flex", alignItems: "center", cursor: "pointer" }} onClick={() => scrollToArtist(artist.gid)}>
                 <div className="artist-icon" style={{ backgroundColor: generateColor(artist.gid) }}></div>
