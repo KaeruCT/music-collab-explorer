@@ -7,7 +7,7 @@ interface TrackInfoProps {
 export function TrackInfo(props: TrackInfoProps) {
   return (
     <div style={{ display: "flex", alignItems: "center" }}>
-      <a target="_blank" href={generateYouTubeSearchLink(props)} style={{ width: "100%", overflow: "hidden", textOverflow: "ellipsis" }}>{props.title}</a>
+      <a target="_blank" rel="noopener noreferrer" href={generateYouTubeSearchLink(props)} style={{ width: "100%", overflow: "hidden", textOverflow: "ellipsis" }}>{props.title}</a>
     </div>
   );
 }

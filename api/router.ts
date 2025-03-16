@@ -67,7 +67,6 @@ router.get("/api/artists/:gid/collabs", async (ctx: ArtistCollabsContext) => {
   try {
     const startArtist = await getArtist(client, gid);
     const collabs = await getCollabs(client, startArtist.gid);
-    client.release();
 
     const nodes: Node[] = [];
     const edges: Edge[] = [];
