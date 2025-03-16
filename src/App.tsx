@@ -307,7 +307,7 @@ export default function App() {
         id: node.id,
         physics: !hidden,
         hidden,
-      } as any);
+      } as unknown as Node);
     }
   }, [showOnlySelected, selectedArtistIds]);
 

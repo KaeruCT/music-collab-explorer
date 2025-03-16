@@ -1,4 +1,4 @@
-FROM denoland/deno:2.0.3 AS frontend
+FROM denoland/deno:2.2.4 AS frontend
 
 WORKDIR /app
 
@@ -8,7 +8,7 @@ COPY src ./src
 RUN deno cache deno.json --lock=deno.lock
 RUN deno task build
 
-FROM denoland/deno:2.0.3 AS backend
+FROM denoland/deno:2.2.4 AS backend
 
 WORKDIR /app
 

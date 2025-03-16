@@ -40,8 +40,7 @@
       "dom.iterable",
       "deno.ns"
     ],
-    "jsx": "react-jsx",
-    "jsxImportSource": "react"
+    "jsx": "react-jsx"
   },
   "nodeModulesDir": "auto"
 }
