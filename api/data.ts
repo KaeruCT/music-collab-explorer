@@ -21,33 +21,37 @@ export async function searchArtists(client: PoolClient, query: string): Promise<
   const result = await client.queryObject<Artist>(
     `
     WITH filtered_artist AS (
-        SELECT id, gid, name, comment, last_updated,
-               similarity(immutable_unaccent(LOWER(name)), immutable_unaccent($1)) AS similarity_score
-        FROM artist
-        WHERE immutable_unaccent(LOWER(name)) % immutable_unaccent($1) -- Trigram fuzzy match
-           OR LOWER(name) ILIKE '%' || $1 || '%'
+      SELECT id, gid, name, comment, last_updated,
+        similarity(unaccent(LOWER(name)), immutable_unaccent($1)) AS similarity_score
+      FROM artist
+      WHERE immutable_unaccent(LOWER(name)) % immutable_unaccent($1) -- Trigram fuzzy match
+        OR immutable_unaccent(LOWER(name)) % ANY (
+        string_to_array(immutable_unaccent($1), ' ')
+      )
     ),
     filtered_acn AS (
-        SELECT artist, STRING_AGG(name, ', ') AS credit_names
-        FROM artist_credit_name
-        WHERE immutable_unaccent(LOWER(name)) % immutable_unaccent($1)
-           OR LOWER(name) ILIKE '%' || $1 || '%'
-        GROUP BY artist
+      SELECT artist, STRING_AGG(name, ', ') AS credit_names
+      FROM artist_credit_name
+      WHERE immutable_unaccent(LOWER(name)) % immutable_unaccent($1)
+        OR immutable_unaccent(LOWER(name)) % ANY (
+          string_to_array(immutable_unaccent($1), ' ')
+        )
+    GROUP BY artist
     )
     SELECT *
     FROM (
-        SELECT a.id, a.gid, a.name, a.comment, a.last_updated,
-            COALESCE(acn.credit_names, '') AS credit_names,
-            a.similarity_score,
-            CASE 
-                WHEN immutable_unaccent(LOWER(a.name)) = immutable_unaccent($1) THEN 1
-                WHEN acn.credit_names IS NOT NULL AND immutable_unaccent(LOWER(acn.credit_names)) % immutable_unaccent($1) THEN 2
-                WHEN immutable_unaccent(LOWER(a.name)) % immutable_unaccent($1) THEN 3
-                ELSE 4
-            END AS relevance
-        FROM filtered_artist a
-        LEFT JOIN filtered_acn acn ON acn.artist = a.id
-        GROUP BY a.id, a.gid, a.name, a.comment, a.last_updated, a.similarity_score, acn.credit_names
+      SELECT a.id, a.gid, a.name, a.comment, a.last_updated,
+        COALESCE(acn.credit_names, '') AS credit_names,
+        a.similarity_score,
+        CASE 
+          WHEN immutable_unaccent(LOWER(a.name)) = immutable_unaccent($1) THEN 1
+          WHEN acn.credit_names IS NOT NULL AND immutable_unaccent(LOWER(acn.credit_names)) % immutable_unaccent($1) THEN 2
+          WHEN immutable_unaccent(LOWER(a.name)) % immutable_unaccent($1) THEN 3
+          ELSE 4
+        END AS relevance
+      FROM filtered_artist a
+      LEFT JOIN filtered_acn acn ON acn.artist = a.id
+      GROUP BY a.id, a.gid, a.name, a.comment, a.last_updated, a.similarity_score, acn.credit_names
     ) AS grouped_artists
     ORDER BY relevance, similarity_score DESC, LENGTH(name) ASC, last_updated DESC
     LIMIT 100;
