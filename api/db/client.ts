@@ -9,7 +9,7 @@ const dbName = Deno.env.get("DB_NAME") || "musicbrainz";
 const dbPort = Deno.env.get("DB_PORT") || "5432";
 const enforceTls = Boolean(Deno.env.get("ENFORCE_TLS")) || false;
 
-console.info(`Database: ${dbHost}:${dbPort}...`);
+console.info(`Database host: ${dbHost}:${dbPort}...`);
 console.info(`Database user: ${dbUser}`);
 console.info(`Database name: ${dbName}`);
 console.info(`Enforce TLS: ${enforceTls}`);

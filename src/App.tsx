@@ -65,6 +65,9 @@ function initVisu(container: HTMLDivElement): Visu {
         size: 12,
       }
     },
+    edges: {
+      smooth: false,
+    },
     physics: {
       forceAtlas2Based: {
         gravitationalConstant: -26,
@@ -137,7 +140,10 @@ export default function App() {
 
       const edgesToAdd = data.edges.filter(
         edge => edges.get({
-          filter: (item: EdgeWithId) => item.from === edge.from && item.to === edge.to
+          filter: (item: EdgeWithId) => (
+            (item.from === edge.from && item.to === edge.to) ||
+            (item.from === edge.to && item.to === edge.from)
+          )
         }).length === 0
       );
       edges.add(edgesToAdd as EdgeWithId[]);
@@ -192,8 +198,10 @@ export default function App() {
       if (prevSelectedArtists.some((a: SelectedArtist) => a.gid === artist.gid)) return prevSelectedArtists;
       return [...prevSelectedArtists, artist];
     });
+    const selectedArtistIds = new Set<string>(selectedArtists.map(artist => artist.gid));
+    selectedArtistIds.add(artist.gid);
     await addArtistCollabs(artist.gid, selectedArtistIds, showOnlySelected);
-  }, [selectedArtistIds, showOnlySelected]);
+  }, [showOnlySelected]);
 
   const handleDoubleClick = useCallback((params: { nodes: string[] }) => {
     if (params.nodes.length === 1) {
