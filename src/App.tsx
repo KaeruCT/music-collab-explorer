@@ -1,43 +1,10 @@
 import { DataSet, Network } from "vis-network/standalone";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { generateColor } from "./colors.ts";
-import { fetchArtistImage } from "./img.ts";
 import { TrackInfo } from "./TrackInfo.tsx";
 import Sticky from "./Sticky.tsx";
-
-// TODO: share types? vite will compile files even if only types are imported
-interface Artist {
-  id: number;
-  gid: string;
-  name: string;
-  comment?: string;
-}
-
-interface Track {
-  id: number;
-  gid: string;
-  name: string;
-}
-
-interface Node {
-  id: string | number;
-  label: string;
-  hidden?: boolean;
-}
-
-interface Edge {
-  from: string | number;
-  to: string | number;
-  value: number;
-  tracks: Track[];
-}
-
-type ArtistCollabsResult = {
-  nodes: Node[];
-  edges: Edge[];
-}
-
-type EdgeWithId = Edge & { id: string };
+import { fetchArtistImagesInBatches } from "./fetchArtistImagesInBatches.ts";
+import { ArtistCollabsResult, Artist, EdgeWithId, Node, Track } from "./types.ts";
 
 function get(path: string, init: RequestInit = {}) {
   return fetch(`${path}`, init);
@@ -96,7 +63,7 @@ function initVisu(container: HTMLDivElement): Visu {
 
 type CollabTracks = { artistA: string, artistB: string, tracks: string[] };
 
-type SelectedArtist = Pick<Artist, "gid" | "name">;
+type SelectedArtist = Pick<Artist, "gid" | "name" | "comment">;
 
 type NodeClickParams = { nodes: string[], edges: string[] };
 
@@ -118,12 +85,12 @@ export default function App() {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const visuRef = useRef<Visu | null>(null);
 
-  const addArtistCollabs = async (gid: string, selectedArtistIds: Set<string>, showOnlySelected: boolean) => {
+  const addArtistCollabs = async (artist: SelectedArtist, selectedArtistIds: Set<string>, showOnlySelected: boolean) => {
     if (!visuRef.current) return;
     const { nodes, edges } = visuRef.current;
     setLoading(true);
     try {
-      const response = await get(`/api/artists/${gid}/collabs`);
+      const response = await get(`/api/artists/${artist.gid}/collabs`);
       const data: ArtistCollabsResult = await response.json();
       const nodesToAdd = data.nodes.filter(node => !nodes.get(node.id)).map(node => {
         const hidden = showOnlySelected && !selectedArtistIds.has(node.id as string);
@@ -136,17 +103,7 @@ export default function App() {
       });
       nodes.add(nodesToAdd);
 
-      nodesToAdd.forEach((node) => {
-        fetchArtistImage(node.label).then((imageUrl) => {
-          if (imageUrl) {
-            nodes.update({
-              id: node.id,
-              shape: "circularImage",
-              image: imageUrl
-            });
-          }
-        });
-      });
+      fetchArtistImagesInBatches(nodesToAdd, nodes);
 
       const edgesToAdd = data.edges.filter(
         edge => edges.get({
@@ -203,14 +160,14 @@ export default function App() {
     }
   };
 
-  const handleSelectArtist = useCallback(async (artist: Pick<Artist, "gid" | "name">) => {
+  const handleSelectArtist = useCallback(async (artist: SelectedArtist) => {
     setSelectedArtists((prevSelectedArtists) => {
       if (prevSelectedArtists.some((a: SelectedArtist) => a.gid === artist.gid)) return prevSelectedArtists;
       return [...prevSelectedArtists, artist];
     });
     const selectedArtistIds = new Set<string>(selectedArtists.map(artist => artist.gid));
     selectedArtistIds.add(artist.gid);
-    await addArtistCollabs(artist.gid, selectedArtistIds, showOnlySelected);
+    await addArtistCollabs(artist, selectedArtistIds, showOnlySelected);
   }, [showOnlySelected]);
 
   const handleDoubleClick = useCallback((params: { nodes: string[] }) => {
@@ -301,7 +258,7 @@ export default function App() {
       const selectedArtists: SelectedArtist[] = JSON.parse(localStorage.getItem("selectedArtists") || "[]");
       setSelectedArtists(selectedArtists);
       for (const artist of selectedArtists) {
-        await addArtistCollabs(artist.gid, new Set(selectedArtists.map(artist => artist.gid)), showOnlySelected);
+        await addArtistCollabs(artist, new Set(selectedArtists.map(artist => artist.gid)), showOnlySelected);
       }
       setTimeout(() => {
         if (!visuRef.current) return;

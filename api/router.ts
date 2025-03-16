@@ -6,6 +6,7 @@ import { getClient } from "./db/client.ts";
 export interface Node {
   id: string | number;
   label: string;
+  comment?: string;
 }
 
 export interface Edge {
@@ -76,6 +77,7 @@ router.get("/api/artists/:gid/collabs", async (ctx: ArtistCollabsContext) => {
         nodes.push({
           id: artist.gid,
           label: artist.name,
+          comment: artist.comment,
         });
         artistIds.add(artist.gid);
       }

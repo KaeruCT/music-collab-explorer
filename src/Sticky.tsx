@@ -1,13 +1,10 @@
-// deno-lint-ignore-file
-/* eslint-disable @typescript-eslint/no-unsafe-function-type */
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useRef, useState } from "react";
 
-const throttle = (func: Function, wait: number) => {
+const throttle = (func: (...args: unknown[]) => void, wait: number) => {
   let lastCallTime: number | null = null;
   let timeout: ReturnType<typeof setTimeout> | null = null;
 
-  return (...args: any[]) => {
+  return (...args: unknown[]) => {
     const now = Date.now();
 
     if (lastCallTime === null || now - lastCallTime >= wait) {
@@ -30,7 +27,7 @@ const throttle = (func: Function, wait: number) => {
 
 const findScrollableAncestor = (element: HTMLElement | null): HTMLElement | Window => {
   while (element) {
-    const overflowY = window.getComputedStyle(element).overflowY;
+    const overflowY = globalThis.getComputedStyle(element).overflowY;
     if (overflowY === "scroll" || overflowY === "auto") {
       return element;
     }

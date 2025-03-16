@@ -7,7 +7,9 @@ The **Music Collab Explorer** is a web app for discovering collabs between music
 Using data from the excellent [MusicBrainz](https://musicbrainz.org/) project, you can search for any artist and visualize their collabs in a dynamic graph.
 
 ## Features
-- Search for an artist and view all their collabs.
+- Search for an artist, and click one of the results to add them to the artist list.
+- Artists in the list will be shown in the graph.
+  - Their collaborators will be shown in the graph as well, if the "Show only selected" checkbox is not checked.
 - Double-click on any artist in the graph to view their collabs.
 - All artists who have collabed are connected.
 - Click on any graph node or edge to view more information.
