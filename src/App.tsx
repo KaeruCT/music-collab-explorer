@@ -98,6 +98,8 @@ type CollabTracks = { artistA: string, artistB: string, tracks: string[] };
 
 type SelectedArtist = Pick<Artist, "gid" | "name">;
 
+type NodeClickParams = { nodes: string[], edges: string[] };
+
 export default function App() {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [searchResults, setSearchResults] = useState<Artist[]>([]);
@@ -108,6 +110,7 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [tracks, setTracks] = useState<CollabTracks[]>([]);
   const [searching, setSearching] = useState<boolean | undefined>(undefined);
+  const [focused, setFocused] = useState<NodeClickParams>({ nodes: [], edges: [] });
   const searchAbortController = useRef<AbortController | null>(null);
 
   const selectedArtistIds = useMemo(() => new Set(selectedArtists.map(artist => artist.gid)), [selectedArtists]);
@@ -222,50 +225,6 @@ export default function App() {
     }
   }, [handleSelectArtist]);
 
-  const handleClick = useCallback((params: { nodes: string[], edges: string[] }) => {
-    if (!visuRef.current) return;
-    const { edges } = visuRef.current;
-    const artist = visu?.nodes.get(params.nodes[0]);
-    if (params.nodes.length === 0 && params.edges.length === 0) {
-      setTracks([]);
-      return;
-    }
-
-    const groupedTracks = params.edges.map(id => {
-      const edge = edges.get(id);
-      if (!edge) {
-        return;
-      }
-
-      const hidden = showOnlySelected && !(selectedArtistIds.has(edge.from as string) && selectedArtistIds.has(edge.to as string));
-      if (hidden) {
-        return;
-      }
-
-      const artist1 = visu?.nodes.get(edge.from) as Node | undefined;
-      const artist2 = visu?.nodes.get(edge.to) as Node | undefined
-      let artistA: Node | null | undefined;
-      let artistB: Node | null | undefined;
-
-      if (artist?.label === artist1?.label) {
-        artistA = artist1;
-        artistB = artist2;
-      } else {
-        artistA = artist2;
-        artistB = artist1;
-      }
-      return {
-        artistA: artistA?.label ?? "",
-        artistB: artistB?.label ?? "",
-        tracks: edge.tracks.map((track: Track) => track.name)
-      };
-    }).filter((track): track is CollabTracks => track !== undefined);
-
-    if (groupedTracks) {
-      setTracks(groupedTracks as CollabTracks[]);
-    }
-  }, [selectedArtistIds, showOnlySelected]);
-
   const scrollToArtist = (artistId: string | number) => {
     const node = visuRef.current?.nodes.get(artistId);
     if (node) {
@@ -328,7 +287,7 @@ export default function App() {
   useEffect(() => {
     if (!containerRef.current) return;
     visuRef.current = initVisu(containerRef.current);
-    visuRef.current?.network.on("click", handleClick);
+    visuRef.current?.network.on("click", setFocused);
     visuRef.current?.network.on("doubleClick", handleDoubleClick);
 
     if (restoredFromStorage.current || initDone) return;
@@ -363,7 +322,52 @@ export default function App() {
       visuRef.current?.network.off("click");
       visuRef.current?.network.off("doubleClick");
     };
-  }, [initDone, handleDoubleClick, handleClick]);
+  }, [initDone, handleDoubleClick, setFocused]);
+
+  useEffect(() => {
+    if (!visuRef.current) return;
+    const params = focused;
+    const { edges } = visuRef.current;
+    const artist = visu?.nodes.get(params.nodes[0]);
+    if (params.nodes.length === 0 && params.edges.length === 0) {
+      setTracks([]);
+      return;
+    }
+
+    const groupedTracks = params.edges.map(id => {
+      const edge = edges.get(id);
+      if (!edge) {
+        return;
+      }
+
+      const hidden = showOnlySelected && !(selectedArtistIds.has(edge.from as string) && selectedArtistIds.has(edge.to as string));
+      if (hidden) {
+        return;
+      }
+
+      const artist1 = visu?.nodes.get(edge.from) as Node | undefined;
+      const artist2 = visu?.nodes.get(edge.to) as Node | undefined
+      let artistA: Node | null | undefined;
+      let artistB: Node | null | undefined;
+
+      if (artist?.label === artist1?.label) {
+        artistA = artist1;
+        artistB = artist2;
+      } else {
+        artistA = artist2;
+        artistB = artist1;
+      }
+      return {
+        artistA: artistA?.label ?? "",
+        artistB: artistB?.label ?? "",
+        tracks: edge.tracks.map((track: Track) => track.name)
+      };
+    }).filter((track): track is CollabTracks => track !== undefined);
+
+    if (groupedTracks) {
+      setTracks(groupedTracks as CollabTracks[]);
+    }
+  }, [selectedArtistIds, showOnlySelected, focused]);
 
   return (
     <div style={{ width: "100%", height: "100%" }}>
