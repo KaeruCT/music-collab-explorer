@@ -22,15 +22,15 @@ export async function searchArtists(client: PoolClient, query: string): Promise<
     `
     WITH filtered_artist AS (
         SELECT id, gid, name, comment, last_updated,
-               similarity(unaccent(LOWER(name)), unaccent($1)) AS similarity_score
+               similarity(immutable_unaccent(LOWER(name)), immutable_unaccent($1)) AS similarity_score
         FROM artist
-        WHERE unaccent(LOWER(name)) % unaccent($1) -- Trigram fuzzy match
+        WHERE immutable_unaccent(LOWER(name)) % immutable_unaccent($1) -- Trigram fuzzy match
            OR LOWER(name) ILIKE '%' || $1 || '%'
     ),
     filtered_acn AS (
         SELECT artist, STRING_AGG(name, ', ') AS credit_names
         FROM artist_credit_name
-        WHERE unaccent(LOWER(name)) % unaccent($1)
+        WHERE immutable_unaccent(LOWER(name)) % immutable_unaccent($1)
            OR LOWER(name) ILIKE '%' || $1 || '%'
         GROUP BY artist
     )
@@ -40,9 +40,9 @@ export async function searchArtists(client: PoolClient, query: string): Promise<
             COALESCE(acn.credit_names, '') AS credit_names,
             a.similarity_score,
             CASE 
-                WHEN unaccent(LOWER(a.name)) = unaccent($1) THEN 1
-                WHEN acn.credit_names IS NOT NULL AND unaccent(LOWER(acn.credit_names)) % unaccent($1) THEN 2
-                WHEN unaccent(LOWER(a.name)) % unaccent($1) THEN 3
+                WHEN immutable_unaccent(LOWER(a.name)) = immutable_unaccent($1) THEN 1
+                WHEN acn.credit_names IS NOT NULL AND immutable_unaccent(LOWER(acn.credit_names)) % immutable_unaccent($1) THEN 2
+                WHEN immutable_unaccent(LOWER(a.name)) % immutable_unaccent($1) THEN 3
                 ELSE 4
             END AS relevance
         FROM filtered_artist a
