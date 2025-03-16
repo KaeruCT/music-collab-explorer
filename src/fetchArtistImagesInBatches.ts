@@ -8,7 +8,7 @@ export async function fetchArtistImagesInBatches(nodesToAdd: Node[], nodes: Data
     await Promise.all(
       batch.map(async (node) => {
         const imageUrl = await fetchArtistImage(node.label, node.comment);
-        if (imageUrl) {
+        if (imageUrl && nodes.get(node.id)) {
           nodes.update({
             id: node.id,
             shape: "circularImage",
