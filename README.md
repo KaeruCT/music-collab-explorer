@@ -53,20 +53,59 @@ deno task start
 ```
 
 # Database Setup
-This application requires a local copy of the MusicBrainz database.
+
+This application requires a local copy of the MusicBrainz database. The setup process involves downloading the MusicBrainz dump, hydrating a local database, and optionally syncing with a remote replica.
+
+## Initial Database Setup
 
 1. Navigate to the `setup/` directory:
    ```sh
    cd setup/
    ```
-2. Run the database initialization script. The credentials must be edited in the script if they differ.
+
+2. Run the database initialization script to download and import MusicBrainz data:
    ```sh
    ./init_db.sh
    ```
+   **Note**: This script requires PostgreSQL superuser access (connects as `postgres` user) to create/drop databases and users. Only run this for local database setup.
+   
+   This script will:
+   - Download the latest MusicBrainz dump (several GB - takes time)
+   - Create a database with the required schema
+   - Import only the relevant tables for the music collab explorer
+   - Create necessary indexes
+
 3. (Optional) Remove superuser privileges from the MusicBrainz user:
    ```sql
    ALTER USER musicbrainz WITH NOSUPERUSER;
    ```
+
+## Database Synchronization with Remote Replica
+
+After setting up your local database, you can sync it with a remote replica database. This enables deploying the application on a proper server on the internet.
+
+### Prerequisites for Sync
+- Local MusicBrainz database already initialized (via `init_db.sh`)
+- Remote PostgreSQL database configured and accessible
+- Environment variables configured for both local and remote databases in `.env`
+
+### Environment Configuration
+Configure your `.env` file based on `.env.example` with the necessary database connection details for both your local database and the remote replica.
+
+### Running the Sync
+Execute the sync script to transfer new/updated records from your local database to the remote replica:
+
+```sh
+cd setup/
+./sync_db.sh
+```
+
+The sync process:
+1. Identifies the highest ID in each table on the remote replica
+2. Exports records with IDs greater than the remote maximum from the local database
+3. Imports the new records into the remote replica
+
+**Note**: The sync is one-way (local → remote) and assumes auto-incrementing primary keys for change detection.
 
 # Future Improvements
 - Improve artist images by using additional sources, only Wikimedia is used at the moment and it's missing many artists.
@@ -74,4 +113,4 @@ This application requires a local copy of the MusicBrainz database.
 
 # Acknowledgments
 - **MusicBrainz** for providing open music metadata. This project would be impossible without them. [Please contribute!](https://musicbrainz.org/doc/How_to_Contribute)
-- **vis-network** for the excellente graph visualization.
+- **vis-network** for the excellent graph visualization.
