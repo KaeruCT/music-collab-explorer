@@ -1,4 +1,5 @@
 #!/bin/bash
+set -xe
 
 # Load environment variables
 set -o allexport

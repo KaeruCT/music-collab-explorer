@@ -1,6 +1,11 @@
 #!/bin/bash
 set -xe
 
+# Load environment variables
+set -o allexport
+source "$(dirname "$0")/../.env"
+set +o allexport
+
 BASE_URL="https://data.metabrainz.org/pub/musicbrainz/data/fullexport"
 LATEST_FILE="$BASE_URL/LATEST"
 
@@ -19,20 +24,20 @@ wget -c "$DUMP_URL" -O "$FILE_NAME"
 
 echo "MusicBrainz Database dump downloaded"
 
-PGHOST=localhost
-PGUSER=postgres
-PGPORT=15432
-DBNAME=musicbrainz
-DBUSER=musicbrainz
-DBPASS=musicbrainz
+PGHOST="$DB_HOST"
+PGUSER="postgres"  # Use postgres superuser for database operations
+PGPORT="$DB_PORT"
+DBNAME="$DB_NAME"
+DBUSER="$DB_USER"
+DBPASS="$DB_PASSWORD"
 
 echo "(Re)creating database and user"
 
-psql --no-psqlrc -p $PGPORT -h $PGHOST -U "$PGUSER" -c "DROP DATABASE IF EXISTS $DBNAME;"
-psql --no-psqlrc -p $PGPORT -h $PGHOST -U "$PGUSER" -c "DO \$\$ BEGIN IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = '$DBUSER') THEN CREATE USER $DBUSER WITH PASSWORD '$DBPASS'; END IF; END \$\$;"
-psql --no-psqlrc -p $PGPORT -h $PGHOST -U "$PGUSER" -c "CREATE DATABASE $DBNAME OWNER $DBUSER;"
-psql --no-psqlrc -p $PGPORT -h $PGHOST -U "$PGUSER" -c "ALTER USER $DBUSER WITH SUPERUSER;"
-psql --no-psqlrc -p $PGPORT -h $PGHOST -U "$PGUSER" -c "GRANT ALL PRIVILEGES ON DATABASE $DBNAME TO $DBUSER;"
+psql --no-psqlrc -p $PGPORT -h $PGHOST -U "$PGUSER" -d postgres -c "DROP DATABASE IF EXISTS $DBNAME;"
+psql --no-psqlrc -p $PGPORT -h $PGHOST -U "$PGUSER" -d postgres -c "DO \$\$ BEGIN IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = '$DBUSER') THEN CREATE USER $DBUSER WITH PASSWORD '$DBPASS'; END IF; END \$\$;"
+psql --no-psqlrc -p $PGPORT -h $PGHOST -U "$PGUSER" -d postgres -c "CREATE DATABASE $DBNAME OWNER $DBUSER;"
+psql --no-psqlrc -p $PGPORT -h $PGHOST -U "$PGUSER" -d postgres -c "ALTER USER $DBUSER WITH SUPERUSER;"
+psql --no-psqlrc -p $PGPORT -h $PGHOST -U "$PGUSER" -d postgres -c "GRANT ALL PRIVILEGES ON DATABASE $DBNAME TO $DBUSER;"
 psql --no-psqlrc -p $PGPORT -h $PGHOST -U "$PGUSER" -d "$DBNAME" -c "GRANT USAGE ON SCHEMA public TO $DBUSER;"
 psql --no-psqlrc -p $PGPORT -h $PGHOST -U "$PGUSER" -d "$DBNAME" -c "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO $DBUSER;"
 psql --no-psqlrc -p $PGPORT -h $PGHOST -U "$PGUSER" -d "$DBNAME" -c "GRANT SELECT ON ALL TABLES IN SCHEMA public TO $DBUSER;"
