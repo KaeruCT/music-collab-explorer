@@ -1,5 +1,5 @@
 #!/bin/bash
-set -xe
+set -e
 
 # Load environment variables
 set -o allexport
@@ -48,3 +48,7 @@ for TABLE in "${TABLE_ARRAY[@]}"; do
     PGPASSWORD="$REPLICA_DB_PASSWORD" psql -h "$REPLICA_DB_HOST" -U "$REPLICA_DB_USER" -d "$REPLICA_DB_NAME" -p "$REPLICA_DB_PORT" -c "\copy $TABLE FROM '$EXPORT_FILE' CSV HEADER;"
     echo "Sync for $TABLE complete."
 done
+
+rm -f "$EXPORT_DIR"/*.csv
+
+echo "Database synchronization complete!"

@@ -101,12 +101,16 @@ psql --no-psqlrc -p $PGPORT -h $PGHOST -d $DBNAME -U $PGUSER -a -c "CREATE INDEX
 psql --no-psqlrc -p $PGPORT -h $PGHOST -d $DBNAME -U $PGUSER -a -c "CREATE INDEX IF NOT EXISTS idx_artist_credit_name_artist_credit ON musicbrainz.artist_credit_name (artist_credit);"
 
 psql --no-psqlrc -p $PGPORT -h $PGHOST -d $DBNAME -U $PGUSER -a <<EOF
-  CREATE EXTENSION IF NOT EXISTS pg_trgm;
-    CREATE FUNCTION immutable_unaccent(text) RETURNS text AS $$
-    SELECT unaccent($1);
-  $$ LANGUAGE sql IMMUTABLE;
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+CREATE EXTENSION IF NOT EXISTS unaccent;
 
-  CREATE INDEX IF NOT EXISTS idx_artist_name_trgm  ON musicbrainz.artist USING gin (immutable_unaccent(lower(name)) gin_trgm_ops);
+CREATE OR REPLACE FUNCTION immutable_unaccent(text) RETURNS text AS \$\$
+SELECT unaccent(\$1);
+\$\$ LANGUAGE sql IMMUTABLE;
 
-  CREATE INDEX IF NOT EXISTS idx_acn_name_trgm  ON musicbrainz.artist_credit_name USING gin (immutable_unaccent(lower(name)) gin_trgm_ops);
-EOF;
+CREATE INDEX IF NOT EXISTS idx_artist_name_trgm ON musicbrainz.artist USING gin (immutable_unaccent(lower(name)) gin_trgm_ops);
+
+CREATE INDEX IF NOT EXISTS idx_acn_name_trgm ON musicbrainz.artist_credit_name USING gin (immutable_unaccent(lower(name)) gin_trgm_ops);
+EOF
+
+echo "Database initialization complete!"
