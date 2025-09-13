@@ -1,5 +1,30 @@
 #!/bin/bash
-set -xe
+set -e
+
+# Parse command line arguments
+CLEAN=false
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --clean|-c)
+            CLEAN=true
+            shift
+            ;;
+        *)
+            echo "Unknown option $1"
+            echo "Usage: $0 [--clean|-c]"
+            echo "  --clean, -c: Remove existing mbdump directory and mbdump.tar.bz2 file before starting"
+            exit 1
+            ;;
+    esac
+done
+
+# Clean up existing files if requested
+if [ "$CLEAN" = true ]; then
+    echo "Cleaning up existing mbdump files..."
+    rm -rf mbdump
+    rm -f mbdump.tar.bz2
+    echo "Cleanup complete."
+fi
 
 # Load environment variables
 set -o allexport
@@ -89,7 +114,7 @@ do
   (echo "SET search_path TO musicbrainz, public;" && echo "\COPY $tablename FROM '$f'") | psql --no-psqlrc -p $PGPORT -h $PGHOST -d $DBNAME -U $PGUSER -a
 done
 
-rm -rf mbdump
+#rm -rf mbdump
 
 echo "Creating indexes and primary keys"
 

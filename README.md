@@ -67,8 +67,14 @@ This application requires a local copy of the MusicBrainz database. The setup pr
    ```sh
    ./init_db.sh
    ```
-   **Note**: This script requires PostgreSQL superuser access (connects as `postgres` user) to create/drop databases and users. Only run this for local database setup.
    
+   To ensure a clean installation by removing any existing dump files first:
+   ```sh
+   ./init_db.sh --clean
+   ```
+   
+   **Note**: This script requires PostgreSQL superuser access (connects as `postgres` user) to create/drop databases and users. Only run this for local database setup.
+
    This script will:
    - Download the latest MusicBrainz dump (several GB - takes time)
    - Create a database with the required schema
