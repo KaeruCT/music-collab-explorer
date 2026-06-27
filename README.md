@@ -98,20 +98,18 @@ After setting up your local database, you can sync it with a remote replica data
 ### Environment Configuration
 Configure your `.env` file based on `.env.example` with the necessary database connection details for both your local database and the remote replica.
 
-### Running the Sync
-Execute the sync script to transfer new/updated records from your local database to the remote replica:
+### Regular Replica Updates
 
-```sh
-cd setup/
-./sync_db.sh
-```
+For the recurring update process, follow [`setup/UPDATE_DATABASE.md`](./setup/UPDATE_DATABASE.md).
 
-The sync process:
-1. Identifies the highest ID in each table on the remote replica
-2. Exports records with IDs greater than the remote maximum from the local database
-3. Imports the new records into the remote replica
+The normal flow is:
+1. Refresh the local MusicBrainz database from the latest upstream dump with `setup/init_db.sh`.
+2. Run `setup/debug_sync.sh` to compare local and replica table state.
+3. Run `setup/sync_db.sh` to push new local rows to the replica.
+4. Run `setup/debug_sync.sh` again to verify the replica advanced.
+5. Clear `${TMPDIR:-/tmp}/app_cache` and restart/redeploy API processes that point at the replica.
 
-**Note**: The sync is one-way (local → remote) and assumes auto-incrementing primary keys for change detection.
+**Important**: The current sync is one-way (local → remote) and high-water-mark based. It copies rows whose primary key is greater than the replica's current max primary key. It does not update or delete existing replica rows.
 
 # Future Improvements
 - Improve artist images by using additional sources, only Wikimedia is used at the moment and it's missing many artists.

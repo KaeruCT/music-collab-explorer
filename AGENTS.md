@@ -104,49 +104,17 @@ setup/                  Local/replica MusicBrainz database scripts
 
 ## Database update procedure
 
-Use this procedure when updating local MusicBrainz data and/or pushing it to a replica.
+The recurring database update runbook is documented in `setup/UPDATE_DATABASE.md`. Use it when the goal is to update the replica with the latest MusicBrainz data.
 
-### Local database refresh from MusicBrainz
+Regular flow:
 
-This recreates the local database from the latest MusicBrainz full export. It is destructive to the local DB named by `.env` `DB_NAME`.
+1. Refresh the local DB from the latest MusicBrainz dump with `setup/init_db.sh`.
+2. Compare local and replica state with `setup/debug_sync.sh`.
+3. Push new local rows to the replica with `setup/sync_db.sh`.
+4. Verify with `setup/debug_sync.sh` again.
+5. Clear `${TMPDIR:-/tmp}/app_cache` and restart/redeploy API processes that read from the replica.
 
-1. Confirm `.env` points at the intended local database (`DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`).
-2. Stop the API/dev server so no requests hit the database during import.
-3. Run the import from `setup/`:
-   ```sh
-   cd setup
-   ./init_db.sh
-   ```
-   Use `./init_db.sh --clean` only when you also want to delete any existing downloaded dump files first.
-4. After import, optionally remove superuser from the app user:
-   ```sql
-   ALTER USER musicbrainz WITH NOSUPERUSER;
-   ```
-5. Clear stale API cache before testing updated data:
-   ```sh
-   rm -rf "${TMPDIR:-/tmp}/app_cache"
-   ```
-6. Start the API and smoke-test the two main endpoints with a known artist query/GID.
-
-### Sync local updates to remote replica
-
-`setup/sync_db.sh` performs a one-way local -> replica sync. It copies only rows whose configured primary key is greater than the current remote max for each table. It does not handle updates/deletes to existing remote rows.
-
-1. Confirm `.env` has correct local DB vars, replica DB vars, `TABLES`, `TABLE_PRIMARY_KEYS`, and `EXPORT_DIR`.
-2. Run the debug check first:
-   ```sh
-   cd setup
-   ./debug_sync.sh
-   ```
-   Review connection success, table existence, row counts, and “Potential records to sync”.
-3. If the debug output looks right, run:
-   ```sh
-   ./sync_db.sh
-   ```
-4. Re-run `./debug_sync.sh` or direct `COUNT(*)`/`MAX(id)` checks to confirm the replica advanced.
-5. Restart or redeploy any API process pointed at the replica if needed, then clear its `${TMPDIR:-/tmp}/app_cache` so users do not see stale cached API responses.
-
-Do not run `init_db.sh` against production or a shared database unless the intent is to drop and recreate it. Prefer `sync_db.sh` for replica updates.
+Important: `sync_db.sh` is one-way and high-water-mark based. It syncs new rows only; it does not update/delete rows that already exist on the replica. Do not run `init_db.sh` against production or a shared database unless the intent is to drop and recreate it.
 
 ## Environment variables
 
